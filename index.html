@@ -51,7 +51,7 @@
     transition:left .9s cubic-bezier(.6,.05,.2,1), top .9s cubic-bezier(.6,.05,.2,1),
                width .9s cubic-bezier(.6,.05,.2,1), height .9s cubic-bezier(.6,.05,.2,1),
                border-radius .9s ease, transform .5s ease, opacity .5s ease;
-    animation:selfglow 2.8s ease-in-out infinite; }
+    box-shadow:0 0 0 5px rgba(15,191,152,.22), 0 22px 60px rgba(20,50,90,.45); }
   #self.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
   @keyframes selfglow {0%,100%{box-shadow:0 0 0 5px rgba(15,191,152,.30),0 22px 60px rgba(20,50,90,.45)}
     50%{box-shadow:0 0 0 13px rgba(15,191,152,.10),0 22px 60px rgba(20,50,90,.45)}}
@@ -155,7 +155,7 @@
   .cta-wrap .ring { position:absolute; left:50%; top:50%; width:120px; height:120px; border-radius:50%;
     transform:translate(-50%,-50%); border:2px solid rgba(15,191,152,.5); animation:expand 2.6s ease-out infinite; }
   .cta-wrap .ring:nth-child(2){ animation-delay:.9s; } .cta-wrap .ring:nth-child(3){ animation-delay:1.8s; }
-  @keyframes expand {0%{width:120px;height:120px;opacity:.7}100%{width:340px;height:340px;opacity:0}}
+  @keyframes expand {0%{transform:translate(-50%,-50%) scale(1);opacity:.7}100%{transform:translate(-50%,-50%) scale(2.8);opacity:0}}
   .bigbtn { position:relative; z-index:2; padding:22px 50px; border-radius:999px; border:none; cursor:pointer;
     font-size:21px; font-weight:800; color:#fff; background:linear-gradient(135deg,var(--accent),var(--blue));
     box-shadow:0 16px 44px rgba(15,191,152,.45); animation:bob 3s ease-in-out infinite; }
@@ -455,7 +455,7 @@ function startNet(){
 // ambient rising bubbles (fill the white space)
 function spawnBubbles(){
   const host=el("bubbles"); if(!host||host.childElementCount) return;
-  for(let i=0;i<16;i++){
+  for(let i=0;i<10;i++){
     const b=document.createElement("span"); b.className="b";
     const sz=18+Math.random()*64; b.style.width=b.style.height=sz+"px";
     b.style.left=(Math.random()*100)+"%";
@@ -545,7 +545,7 @@ async function startCamera(){
   el("self").classList.add("show");                 // the circle is always visible on the landing
   if (camStream) { el("self").classList.add("cam"); return true; }
   try {
-    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:"user" }, audio:false });
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:"user", width:{ideal:640}, height:{ideal:480}, frameRate:{ideal:24} }, audio:false });
     el("selfview").srcObject = camStream;
     el("self").classList.add("cam");                // shows live video, hides the Oni fallback
     el("selfiebtn").textContent = "📷 Take a selfie";
@@ -592,7 +592,7 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
   spawnBubbles();                                   // ambient motion to fill the white space
   renderQuiz();                                     // interactive quiz (portrait kiosk)
   startCamera();                                    // auto-show the live "you" square on the landing
-  console.log("ZICTA build: perf + bubbles + square selfie v6");
+  console.log("ZICTA build: landing perf (low-res cam, static glow, GPU rings) v7");
 })();
 
 // ---------- session ----------
