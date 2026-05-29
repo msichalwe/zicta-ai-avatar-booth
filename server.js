@@ -313,7 +313,11 @@ function serveStatic(req, res) {
       return res.end("not found");
     }
     const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
+    const noCache = [".html", ".js", ".mjs", ".json"].includes(ext);
+    res.writeHead(200, {
+      "Content-Type": MIME[ext] || "application/octet-stream",
+      "Cache-Control": noCache ? "no-store, no-cache, must-revalidate" : "public, max-age=86400",
+    });
     res.end(buf);
   });
 }
