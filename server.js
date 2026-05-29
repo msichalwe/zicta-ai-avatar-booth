@@ -322,7 +322,7 @@ function serveStatic(req, res) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
+const requestHandler = async (req, res) => {
   try {
     if (req.url.startsWith("/api/config")) return handleConfig(res);
     if (req.url.startsWith("/api/chat") && req.method === "POST") return handleChat(req, res);
@@ -334,15 +334,29 @@ const server = http.createServer(async (req, res) => {
     console.error("Request failed:", e);
     sendJson(res, 500, { error: "server error" });
   }
-});
+};
+
+// HTTPS if cert files are configured (needed for camera/mic over the network), else HTTP
+let server, scheme = "http";
+if (config.httpsKeyFile && config.httpsCertFile &&
+    fs.existsSync(config.httpsKeyFile) && fs.existsSync(config.httpsCertFile)) {
+  const https = require("https");
+  server = https.createServer(
+    { key: fs.readFileSync(config.httpsKeyFile), cert: fs.readFileSync(config.httpsCertFile) },
+    requestHandler
+  );
+  scheme = "https";
+} else {
+  server = http.createServer(requestHandler);
+}
 
 server.listen(PORT, () => {
   config = loadConfig();
-  console.log("\n  ZICTA-AI avatar booth running");
-  console.log("  Open:  http://localhost:" + PORT);
-  console.log("  Photoreal custom (main): http://localhost:" + PORT + "/");
-  console.log("  Embed version:           http://localhost:" + PORT + "/embed.html");
-  console.log("  Free 3D fallback:        http://localhost:" + PORT + "/avatar3d.html");
+  console.log("\n  ZICTA-AI avatar booth running (" + scheme.toUpperCase() + ")");
+  console.log("  Open:  " + scheme + "://localhost:" + PORT);
+  console.log("  Photoreal custom (main): " + scheme + "://localhost:" + PORT + "/");
+  console.log("  Embed version:           " + scheme + "://localhost:" + PORT + "/embed.html");
+  console.log("  Free 3D fallback:        " + scheme + "://localhost:" + PORT + "/avatar3d.html");
   console.log("  Brain (Claude):", config.anthropicApiKey ? "ON" : "demo fallback");
   console.log("  Voice (Google):", config.googleTtsApiKey ? "ON" : "browser fallback");
   console.log("  LiveAvatar photoreal:", config.liveavatarApiKey ? (config.liveavatarSandbox !== false ? "ON (sandbox)" : "ON (live)") : "needs key");
