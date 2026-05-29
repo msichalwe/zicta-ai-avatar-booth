@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>ZICTA AI Host</title>
+<style>
+  :root {
+    --accent:#0fbf98; --accent2:#0a8f73; --blue:#2f6df6;
+    --ink:#0c2233; --muted:#5b7184; --panel:rgba(255,255,255,.84); --soft:#eef4fa;
+  }
+  * { box-sizing:border-box; margin:0; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; overflow:hidden; color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif; background:#eaf4fb; }
+
+  /* bright animated backdrop */
+  #bg { position:fixed; inset:0; z-index:0;
+    background:
+      radial-gradient(900px 620px at 16% 14%, rgba(15,191,152,.30), transparent 60%),
+      radial-gradient(820px 620px at 88% 18%, rgba(47,109,246,.22), transparent 60%),
+      radial-gradient(900px 700px at 80% 92%, rgba(120,86,255,.18), transparent 60%),
+      linear-gradient(135deg,#eef8ff,#e9fbf4 50%,#f3eeff);
+    background-size:160% 160%; animation:drift 26s ease-in-out infinite; }
+  @keyframes drift {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+  #stage { position:relative; z-index:1; height:100vh; width:100vw; display:flex; gap:24px; padding:24px; }
+
+  /* avatar (left) */
+  #avatarWrap { position:relative; flex:1 1 60%; border-radius:26px; overflow:hidden;
+    box-shadow:0 24px 70px rgba(20,50,90,.22); background:#0a1626; opacity:0; transform:scale(.99);
+    transition:opacity .5s, transform .5s; }
+  #avatarWrap.in { opacity:1; transform:none; }
+  #video { width:100%; height:100%; object-fit:cover; display:block; }
+  #brand { position:absolute; top:18px; left:18px; z-index:2; display:flex; align-items:center; gap:9px;
+    background:rgba(255,255,255,.82); backdrop-filter:blur(8px); padding:8px 14px 8px 10px; border-radius:999px;
+    box-shadow:0 6px 20px rgba(0,0,0,.18); }
+  #brand .logo { width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,var(--accent),var(--blue));
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; color:#fff; }
+  #brand b { font-size:15px; } #brand small { display:block; font-size:10.5px; color:var(--muted); font-weight:600; }
+  #livecap { position:absolute; left:50%; transform:translateX(-50%); bottom:20px; max-width:90%;
+    text-align:center; font-size:clamp(15px,1.7vw,22px); font-weight:600; color:#fff; z-index:2;
+    background:rgba(10,22,38,.55); backdrop-filter:blur(6px); padding:10px 18px; border-radius:16px;
+    transition:opacity .3s; opacity:0; }
+  #livecap.show { opacity:1; }
+
+  /* webcam self-view: starts as a circle on the landing, glides to the chat corner */
+  #self { position:fixed; z-index:30; overflow:hidden; background:#0a1626; opacity:0; pointer-events:none;
+    border:3px solid rgba(255,255,255,.9); box-shadow:0 16px 50px rgba(20,50,90,.4);
+    left:80%; top:42%; width:210px; height:210px; border-radius:50%; transform:translate(-50%,-50%) scale(.94);
+    transition:left .9s cubic-bezier(.6,.05,.2,1), top .9s cubic-bezier(.6,.05,.2,1),
+               width .9s cubic-bezier(.6,.05,.2,1), height .9s cubic-bezier(.6,.05,.2,1),
+               border-radius .9s ease, transform .45s ease, opacity .45s ease; }
+  #self.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+  #self.docked { left:8%; top:80%; width:196px; height:148px; border-radius:16px; }
+  #selfview { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block; }
+  #self .tag { position:absolute; bottom:7px; left:9px; font-size:11px; font-weight:800; color:#fff;
+    text-shadow:0 1px 6px rgba(0,0,0,.9); z-index:3; }
+  #self .eye { position:absolute; top:8px; right:10px; font-size:11px; color:#18c29c; z-index:3; }
+  /* 3D-ish audio waves along the bottom of the self-view */
+  #waves { position:absolute; left:0; right:0; bottom:0; height:38px; display:flex; align-items:flex-end;
+    justify-content:center; gap:4px; padding-bottom:5px; z-index:2;
+    background:linear-gradient(to top, rgba(10,22,38,.65), transparent); }
+  #waves i { width:5px; height:7px; border-radius:3px; background:linear-gradient(to top,var(--accent),var(--blue));
+    animation:wave 1.1s ease-in-out infinite; }
+  #waves i:nth-child(2){animation-delay:.12s} #waves i:nth-child(3){animation-delay:.24s}
+  #waves i:nth-child(4){animation-delay:.36s} #waves i:nth-child(5){animation-delay:.48s}
+  #waves i:nth-child(6){animation-delay:.6s} #waves i:nth-child(7){animation-delay:.72s}
+  @keyframes wave {0%,100%{height:7px}50%{height:22px}}
+  #self.talking #waves i { animation-duration:.5s; }
+
+  /* countdown timer + extend (over avatar, top-right) */
+  #timerbar { position:absolute; top:18px; right:18px; z-index:3; display:flex; align-items:center; gap:8px; }
+  #timer { background:rgba(255,255,255,.85); backdrop-filter:blur(8px); color:var(--ink); font-weight:800;
+    font-size:18px; padding:7px 14px; border-radius:999px; box-shadow:0 6px 20px rgba(0,0,0,.18);
+    font-variant-numeric:tabular-nums; min-width:62px; text-align:center; transition:background .3s,color .3s; }
+  #timer.low { background:#ff5d6c; color:#fff; animation:tpulse 1s infinite; }
+  @keyframes tpulse {0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  #plus20 { background:linear-gradient(135deg,var(--blue),#1f4fd0); color:#fff; border:none; cursor:pointer;
+    font-weight:800; font-size:14px; padding:8px 14px; border-radius:999px; box-shadow:0 6px 20px rgba(47,109,246,.4);
+    transition:transform .12s; } #plus20:active { transform:scale(.93); }
+
+  /* chat panel (right) */
+  #panel { flex:0 0 clamp(330px,32vw,460px); display:flex; flex-direction:column;
+    background:var(--panel); backdrop-filter:blur(18px); border:1px solid rgba(255,255,255,.7);
+    border-radius:26px; overflow:hidden; box-shadow:0 24px 70px rgba(20,50,90,.22);
+    opacity:0; transform:translateY(8px); transition:opacity .5s .1s, transform .5s .1s; }
+  #panel.in { opacity:1; transform:none; }
+  #phead { display:flex; align-items:center; gap:11px; padding:16px 18px; border-bottom:1px solid rgba(12,34,51,.08); }
+  #phead .av { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; color:#fff;
+    box-shadow:0 4px 14px rgba(15,191,152,.4); }
+  #phead .who { font-weight:800; font-size:16px; line-height:1.1; }
+  #phead .sub { font-size:11px; color:var(--muted); font-weight:600; }
+  #dot { margin-left:auto; width:9px; height:9px; border-radius:50%; background:#c2ccd6; }
+  #dot.live { background:var(--accent); box-shadow:0 0 0 0 rgba(15,191,152,.5); animation:ping 2s infinite; } #dot.bad { background:#f0a92e; }
+  @keyframes ping {0%{box-shadow:0 0 0 0 rgba(15,191,152,.5)}70%{box-shadow:0 0 0 8px rgba(15,191,152,0)}100%{box-shadow:0 0 0 0 rgba(15,191,152,0)}}
+  #endbtn { margin-left:10px; border:none; background:rgba(12,34,51,.07); color:var(--muted); width:30px; height:30px;
+    border-radius:50%; cursor:pointer; font-size:15px; line-height:1; display:none; }
+  #endbtn.show { display:inline-block; }
+
+  #messages { flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:10px; scroll-behavior:smooth; }
+  #messages::-webkit-scrollbar { width:7px; } #messages::-webkit-scrollbar-thumb { background:rgba(12,34,51,.18); border-radius:4px; }
+  .msg { max-width:88%; padding:11px 15px; border-radius:16px; font-size:15.5px; line-height:1.42; word-wrap:break-word;
+    animation:pop .25s ease; }
+  @keyframes pop {from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  .msg.avatar { align-self:flex-start; background:linear-gradient(135deg,#ddf7f0,#d3f0ff); color:#0a3c33; border-bottom-left-radius:5px; }
+  .msg.user { align-self:flex-end; background:var(--soft); color:var(--ink); border-bottom-right-radius:5px; }
+  .msg .lbl { display:block; font-size:10px; letter-spacing:.5px; text-transform:uppercase; opacity:.55; margin-bottom:3px; font-weight:700; }
+  #emptyhint { margin:auto; text-align:center; color:var(--muted); font-size:14px; padding:24px; }
+
+  #pfoot { padding:15px 18px; border-top:1px solid rgba(12,34,51,.08); display:flex; align-items:center; gap:14px; }
+  #talk { width:60px; height:60px; flex:0 0 auto; border-radius:50%; border:none; cursor:pointer; color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); font-size:24px;
+    box-shadow:0 8px 22px rgba(15,191,152,.45); transition:transform .12s,background .25s; touch-action:none; user-select:none; }
+  #talk:active { transform:scale(.93); }
+  #talk.listening { background:linear-gradient(135deg,#ff6b7a,#c41f3c); animation:pulse 1.2s infinite; }
+  #talk.speaking { background:linear-gradient(135deg,#5b9bff,#2155b9); }
+  #talk.muted { background:linear-gradient(135deg,#9aa7b4,#5f6c79); }
+  @keyframes pulse {0%{box-shadow:0 0 0 0 rgba(255,107,122,.5)}70%{box-shadow:0 0 0 16px rgba(255,107,122,0)}100%{box-shadow:0 0 0 0 rgba(255,107,122,0)}}
+  #foottext { font-size:13px; color:var(--muted); line-height:1.3; }
+
+  /* overlays */
+  .overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column;
+    z-index:20; text-align:center; padding:32px; }
+  #attract { background:
+      radial-gradient(900px 620px at 18% 16%, rgba(15,191,152,.35), transparent 60%),
+      radial-gradient(820px 600px at 84% 22%, rgba(47,109,246,.28), transparent 60%),
+      radial-gradient(820px 700px at 78% 90%, rgba(120,86,255,.22), transparent 60%),
+      linear-gradient(135deg,#eaf8ff,#e6fbf3 50%,#f1ecff);
+      background-size:170% 170%; animation:drift 22s ease-in-out infinite; }
+  .kicker { font-size:13px; letter-spacing:4px; color:var(--accent2); font-weight:800; opacity:0; animation:rise .7s .1s forwards; }
+  #attract h1 { font-size:clamp(34px,6vw,64px); font-weight:900; letter-spacing:-.5px; margin:14px 0 8px; line-height:1.05;
+    background:linear-gradient(120deg,#0c2233,#0a8f73,#2f6df6); -webkit-background-clip:text; background-clip:text; color:transparent;
+    opacity:0; animation:rise .7s .25s forwards; }
+  #attract p { max-width:560px; line-height:1.55; color:var(--muted); font-size:17px; opacity:0; animation:rise .7s .4s forwards; }
+  @keyframes rise {from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+
+  .cta-wrap { position:relative; margin-top:40px; opacity:0; animation:rise .7s .55s forwards; }
+  .cta-wrap .ring { position:absolute; left:50%; top:50%; width:120px; height:120px; border-radius:50%;
+    transform:translate(-50%,-50%); border:2px solid rgba(15,191,152,.5); animation:expand 2.6s ease-out infinite; }
+  .cta-wrap .ring:nth-child(2){ animation-delay:.9s; } .cta-wrap .ring:nth-child(3){ animation-delay:1.8s; }
+  @keyframes expand {0%{width:120px;height:120px;opacity:.7}100%{width:340px;height:340px;opacity:0}}
+  .bigbtn { position:relative; z-index:2; padding:22px 50px; border-radius:999px; border:none; cursor:pointer;
+    font-size:21px; font-weight:800; color:#fff; background:linear-gradient(135deg,var(--accent),var(--blue));
+    box-shadow:0 16px 44px rgba(15,191,152,.45); animation:bob 3s ease-in-out infinite; }
+  @keyframes bob {0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .bigbtn:active { transform:scale(.96); }
+  .selfiebtn { margin-top:18px; padding:12px 26px; border-radius:999px; cursor:pointer; font-size:15px; font-weight:700;
+    color:#0a5c4d; background:rgba(255,255,255,.75); border:1px solid rgba(15,191,152,.4);
+    box-shadow:0 6px 18px rgba(20,50,90,.1); opacity:0; animation:rise .7s .85s forwards; transition:transform .12s, background .2s; }
+  .selfiebtn:active { transform:scale(.95); } .selfiebtn.on { background:#0fbf98; color:#fff; border-color:transparent; }
+
+  /* floating orbs on landing */
+  .orbs span { position:absolute; border-radius:50%; filter:blur(2px); opacity:.5; animation:float 12s ease-in-out infinite; }
+  .orbs span:nth-child(1){ width:90px;height:90px; left:12%; top:24%; background:rgba(15,191,152,.4); }
+  .orbs span:nth-child(2){ width:60px;height:60px; right:16%; top:32%; background:rgba(47,109,246,.4); animation-delay:2s; }
+  .orbs span:nth-child(3){ width:120px;height:120px; left:22%; bottom:14%; background:rgba(120,86,255,.3); animation-delay:4s; }
+  .orbs span:nth-child(4){ width:70px;height:70px; right:20%; bottom:18%; background:rgba(15,191,152,.3); animation-delay:1s; }
+  @keyframes float {0%,100%{transform:translateY(0) translateX(0)}50%{transform:translateY(-26px) translateX(12px)}}
+
+  #connecting, #ended { background:radial-gradient(ellipse at center,rgba(244,250,255,.92),rgba(230,243,252,.97)); color:var(--ink); }
+  #ended h1 { font-size:clamp(28px,5vw,46px); font-weight:900; max-width:16ch; line-height:1.1;
+    background:linear-gradient(120deg,#0a8f73,#2f6df6); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  #ended p, #connecting p { max-width:540px; line-height:1.55; color:var(--muted); font-size:16px; margin-top:14px; }
+  #ended code, #attract code { background:#dce8f2; padding:2px 7px; border-radius:5px; font-size:14px; }
+  #ended a, #attract a { color:#0a8f73; }
+  #ended .bigbtn { margin-top:26px; animation:none; }
+  .spinner { width:48px; height:48px; border:4px solid rgba(15,191,152,.25); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .hidden { display:none !important; }
+
+  /* ---- landing pazazz ---- */
+  #net { position:absolute; inset:0; z-index:0; width:100%; height:100%; }
+  #attract .kicker, #attract h1, #attract p, #attract .chips, #attract .cta-wrap { position:relative; z-index:2; }
+  #attract h1 { background-size:220% auto; animation:rise .7s .25s forwards, shimmer 7s linear infinite; }
+  @keyframes shimmer { to { background-position:220% center; } }
+  .chips { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:24px; max-width:640px;
+    opacity:0; animation:rise .7s .7s forwards; }
+  .chip { background:rgba(255,255,255,.72); border:1px solid rgba(15,191,152,.3); color:#0a5c4d; font-weight:600;
+    font-size:13.5px; padding:9px 16px; border-radius:999px; box-shadow:0 6px 18px rgba(20,50,90,.1);
+    animation:floaty 6s ease-in-out infinite; }
+  .chip:nth-child(2){animation-delay:1.2s} .chip:nth-child(3){animation-delay:2.4s} .chip:nth-child(4){animation-delay:3.6s}
+  @keyframes floaty {0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+  /* ---- landing hero portrait (Oni's face) ---- */
+  .hero { position:relative; width:176px; height:176px; margin-bottom:6px; z-index:2; opacity:0; animation:rise .7s .05s forwards; }
+  .hero .pic { position:absolute; inset:0; border-radius:50%; overflow:hidden; border:4px solid rgba(255,255,255,.9);
+    box-shadow:0 18px 54px rgba(20,50,90,.32); z-index:2; }
+  .hero .pic img { width:100%; height:100%; object-fit:cover; object-position:center 18%; }
+  .hero .glow { position:absolute; inset:-12px; border-radius:50%; z-index:1; filter:blur(16px); opacity:.75;
+    background:conic-gradient(from 0deg, var(--accent), var(--blue), #7a56ff, var(--accent)); animation:spin 9s linear infinite; }
+  .hero .pulse { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(15,191,152,.55); z-index:3; animation:expand2 2.6s ease-out infinite; }
+  @keyframes expand2 {0%{transform:scale(1);opacity:.6}100%{transform:scale(1.45);opacity:0}}
+  .hero .live { position:absolute; bottom:8px; right:8px; z-index:4; background:#0fbf98; color:#fff; font-size:10.5px;
+    font-weight:800; letter-spacing:.5px; padding:4px 10px; border-radius:999px; box-shadow:0 4px 14px rgba(0,0,0,.25); }
+
+  /* ---- animated loading screen ---- */
+  .loader { position:relative; width:140px; height:140px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+  .loader .orb { width:104px; height:104px; border-radius:50%; overflow:hidden; border:3px solid rgba(255,255,255,.92);
+    box-shadow:0 12px 34px rgba(15,191,152,.5); animation:breathe 2.4s ease-in-out infinite; z-index:2; }
+  .loader .orb img { width:100%; height:100%; object-fit:cover; object-position:center 18%; }
+  @keyframes breathe {0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .loader .lring { position:absolute; inset:0; border-radius:50%; z-index:1;
+    background:conic-gradient(var(--accent), var(--blue) 40%, transparent 72%); animation:spin 1.1s linear infinite;
+    -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+    mask:radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px)); }
+  #connmsg { font-weight:700; font-size:19px; color:var(--ink); min-height:1.3em; transition:opacity .25s; }
+  .dots { display:flex; gap:8px; margin-top:14px; }
+  .dots i { width:9px; height:9px; border-radius:50%; background:var(--accent); animation:bounce 1.2s ease-in-out infinite; }
+  .dots i:nth-child(2){animation-delay:.18s} .dots i:nth-child(3){animation-delay:.36s}
+  @keyframes bounce {0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-9px);opacity:1}}
+
+  @media (max-width:820px){ #stage{flex-direction:column;} #panel{flex:0 0 44%;} }
+</style>
+</head>
+<body>
+  <div id="bg"></div>
+  <div id="self"><video id="selfview" autoplay playsinline muted></video><span class="eye">●</span><span class="tag">You</span><div id="waves"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div id="stage">
+    <div id="avatarWrap">
+      <video id="video" autoplay playsinline></video>
+      <div id="brand"><span class="logo">Z</span><span><b>ZICTA AI</b><small id="brandsub">Interactive Host</small></span></div>
+      <div id="timerbar"><span id="timer" class="hidden">1:30</span><button id="plus20" class="hidden">+20s</button></div>
+      <div id="livecap"></div>
+    </div>
+    <div id="panel">
+      <div id="phead">
+        <div class="av" id="pinitial">J</div>
+        <div><div class="who" id="pname">Jonah</div><div class="sub">ZICTA AI Host</div></div>
+        <div id="dot"></div>
+        <button id="endbtn" title="End / next visitor">✕</button>
+      </div>
+      <div id="messages"><div id="emptyhint">Your conversation will appear here.</div></div>
+      <div id="pfoot"><button id="talk" title="microphone">🎤</button><div id="foottext">Ready</div></div>
+    </div>
+  </div>
+
+  <!-- animated landing -->
+  <div id="attract" class="overlay">
+    <canvas id="net"></canvas>
+    <div class="orbs"><span></span><span></span><span></span><span></span></div>
+    <div class="hero"><span class="glow"></span><span class="pulse"></span><span class="pic"><img src="/assets/oni.jpg" alt="" /></span><span class="live">● ONLINE</span></div>
+    <div class="kicker">ZICTA · ZAMBIA ICT AUTHORITY</div>
+    <h1 id="attracttitle">Meet Jonah</h1>
+    <p id="attractsub">Your AI host for everything ZICTA — ask about SIM registration, online safety, the .zm domain and more.</p>
+    <div class="chips">
+      <span class="chip">“How do I register my SIM?”</span>
+      <span class="chip">“What is the .zm domain?”</span>
+      <span class="chip">“How do I report a scam?”</span>
+      <span class="chip">“What does ZICTA do?”</span>
+    </div>
+    <div class="cta-wrap">
+      <span class="ring"></span><span class="ring"></span><span class="ring"></span>
+      <button class="bigbtn" id="startbtn">Talk to Oni</button>
+    </div>
+    <button class="selfiebtn" id="selfiebtn">📷 Take a selfie</button>
+  </div>
+  <div id="connecting" class="overlay hidden">
+    <div class="loader"><span class="lring"></span><span class="orb"><img src="/assets/oni.jpg" alt="" /></span></div>
+    <p id="connmsg">Waking up…</p>
+    <div class="dots"><i></i><i></i><i></i></div>
+  </div>
+  <div id="ended" class="overlay hidden"><h1 id="endtitle">Thanks for chatting!</h1><p id="endmsg"></p><button class="bigbtn" id="restartbtn">Start again</button></div>
+
+<script type="module">
+import { LiveAvatarSession, SessionEvent, SessionState, AgentEventsEnum, SessionInteractivityMode }
+  from "https://cdn.jsdelivr.net/npm/@heygen/liveavatar-web-sdk@0.0.18/+esm";
+
+const el = (id) => document.getElementById(id);
+const video = el("video"), talk = el("talk"), messages = el("messages"), livecap = el("livecap");
+
+let cfg = { hasLiveAvatar:false, agentName:"Host", liveavatarPushToTalk:false, liveavatarSandbox:false };
+let session = null, ptt = false, keepAlive = null, ending = false;
+let lastActivity = Date.now(), idleWatch = null, farewellPending = false, returnTimer = null, farewellTimer = null;
+let transcript = [];
+let secondsLeft = 0, timerInt = null, closing = false, closeSafety = null, goodbyeLive = false;
+const IDLE_STOP_MS = 60000;
+let camStream = null, revealed = false, revealFallback = null, pendingMicMsg = "";
+// detect a goodbye. Strong phrases always count. "bye" is often mis-heard by speech-to-text
+// as "buy"/"by", so accept those too — but ONLY in a short closing utterance, never when the
+// person is clearly asking about buying something (e.g. "where can I buy a phone?").
+function isFarewell(text){
+  const t = (text||"").toLowerCase().trim();
+  if (!t) return false;
+  if (/\b(goodbye|good bye|see you|see ya|see you later|till next time|catch you later|take care|that'?s all|that'?s it|that will be all|i'?m done|we'?re done|nothing else|that'?s everything|have a (good|nice|great) (day|one)|cheers|gotta go|got to go)\b/.test(t)) return true;
+  const words = t.split(/\s+/).filter(Boolean);
+  const hasByeWord = /\b(bye+|buy|by)\b/.test(t);
+  const purchaseOrQuestion = /\b(a|an|the|phone|sim|device|gadget|laptop|airtime|bundle|data|router|modem|want|need|how|where|which|can i|should i|looking|interested)\b/.test(t);
+  if (hasByeWord && words.length <= 4 && !purchaseOrQuestion) return true;
+  return false;
+}
+function flagFarewell(){
+  farewellPending = true;
+  clearTimeout(farewellTimer);
+  // fallback: end even if the avatar doesn't give a closing reply
+  farewellTimer = setTimeout(()=>{ if (farewellPending){ farewellPending=false; gracefulDone("farewell"); } }, 9000);
+}
+const bump = () => { lastActivity = Date.now(); };
+
+function setDot(cls){ el("dot").className = cls || ""; }
+function setFoot(t){ el("foottext").textContent = t; }
+function show(id){ el(id).classList.remove("hidden"); }
+function hide(id){ el(id).classList.add("hidden"); }
+function setTalk(state){
+  talk.className = state==="idle" ? "" : state;
+  talk.textContent = state==="muted" ? "🔇" : state==="listening" ? "●" : state==="speaking" ? "♪" : "🎤";
+}
+
+// countdown timer
+function fmt(s){ s=Math.max(0,s); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+function updateTimer(){ el("timer").textContent = fmt(secondsLeft); el("timer").classList.toggle("low", secondsLeft<=20); }
+function startTimer(){
+  secondsLeft = cfg.liveavatarMaxSeconds || 90;
+  updateTimer(); el("timer").classList.remove("hidden"); el("plus20").classList.remove("hidden");
+  clearInterval(timerInt);
+  timerInt = setInterval(()=>{ secondsLeft--; updateTimer(); if (secondsLeft<=0){ clearInterval(timerInt); timeUp(); } }, 1000);
+}
+function stopTimer(){ clearInterval(timerInt); el("timer").classList.add("hidden"); el("plus20").classList.add("hidden"); }
+function extend(){ secondsLeft += (cfg.liveavatarExtendSeconds || 20); updateTimer(); bump(); }
+function timeUp(){
+  if (closing || ending || !session) return;
+  closing = true; goodbyeLive = false; el("plus20").classList.add("hidden"); setFoot("Wrapping up…");
+  const bye = "That's all the time we have for now — thank you so much for visiting the ZICTA stand. Have a wonderful day, and do come back any time!";
+  try { session.interrupt(); } catch {}
+  // small delay so the interrupt settles, then speak the goodbye; we only end after IT finishes
+  setTimeout(()=>{ try { session.repeat(bye); } catch(e){ console.warn(e); gracefulDone("timeup"); } }, 400);
+  closeSafety = setTimeout(()=>gracefulDone("timeup"), 16000);   // backstop
+}
+
+// chat rendering
+let curSender=null, curEl=null;
+function bubble(sender, text, append){
+  el("emptyhint")?.remove();
+  if (curSender!==sender || !curEl){
+    curEl=document.createElement("div"); curEl.className="msg "+sender;
+    const lbl=document.createElement("span"); lbl.className="lbl";
+    lbl.textContent = sender==="avatar" ? (cfg.agentName||"Host") : "You";
+    const span=document.createElement("span"); span.className="txt";
+    curEl.appendChild(lbl); curEl.appendChild(span); messages.appendChild(curEl); curSender=sender;
+  }
+  const t=curEl.querySelector(".txt");
+  t.textContent = append ? (t.textContent+text) : text;
+  if (sender==="avatar"){ livecap.textContent=t.textContent; livecap.classList.add("show"); }
+  messages.scrollTop = messages.scrollHeight;
+}
+function finalize(sender, text){
+  bubble(sender, text||"", false);
+  transcript.push({ sender, text:text||"", at:new Date().toISOString() });
+  curSender=null; curEl=null;
+  if (sender==="avatar") setTimeout(()=>livecap.classList.remove("show"), 2500);
+}
+
+// constellation backdrop (connectivity theme) — runs on the landing
+let net = null;
+function startNet(){
+  const c = el("net"); if (!c || net) return;
+  const ctx = c.getContext("2d"); const dpr = Math.min(2, window.devicePixelRatio || 1);
+  let w=0,h=0,raf=0,running=true; const nodes=[];
+  const size=()=>{ w=c.width=c.offsetWidth*dpr; h=c.height=c.offsetHeight*dpr; };
+  size();
+  const N = Math.max(26, Math.min(60, Math.floor((c.offsetWidth||900)/26)));
+  for(let i=0;i<N;i++) nodes.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.18*dpr,vy:(Math.random()-.5)*.18*dpr});
+  const MAX=150*dpr;
+  function frame(){
+    ctx.clearRect(0,0,w,h);
+    for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w)n.vx*=-1; if(n.y<0||n.y>h)n.vy*=-1; }
+    for(let i=0;i<nodes.length;i++) for(let j=i+1;j<nodes.length;j++){
+      const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.hypot(dx,dy);
+      if(d<MAX){ ctx.strokeStyle="rgba(15,191,152,"+(.18*(1-d/MAX)).toFixed(3)+")"; ctx.lineWidth=dpr;
+        ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); }
+    }
+    for(const n of nodes){ ctx.fillStyle="rgba(47,109,246,.55)"; ctx.beginPath(); ctx.arc(n.x,n.y,2*dpr,0,7); ctx.fill(); }
+    if(running) raf=requestAnimationFrame(frame);
+  }
+  window.addEventListener("resize", size);
+  frame();
+  net = { pause(){ running=false; cancelAnimationFrame(raf); }, resume(){ if(!running){ running=true; size(); frame(); } } };
+}
+
+// animated loading screen text
+let connTimer=null, connAt=0;
+function startConn(){
+  const name = cfg.agentName || "Jonah";
+  const msgs = ["Waking up "+name+"…","Connecting securely…","Setting up your conversation…","Almost ready…"];
+  let i=0; const m=el("connmsg"); m.textContent=msgs[0]; m.style.opacity=1; connAt=Date.now();
+  clearInterval(connTimer);
+  connTimer=setInterval(()=>{ i=(i+1)%msgs.length; m.style.opacity=0; setTimeout(()=>{ m.textContent=msgs[i]; m.style.opacity=1; },220); }, 1500);
+}
+function stopConn(){ clearInterval(connTimer); }
+
+// ---------- webcam self-view (so it feels like Oni sees you) ----------
+async function startCamera(){
+  if (camStream) { el("self").classList.add("show"); return true; }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:"user" }, audio:false });
+    el("selfview").srcObject = camStream;
+    el("self").classList.add("show");
+    return true;
+  } catch(e){ console.warn("camera unavailable:", e); return false; }
+}
+function dockSelf(){ if (camStream) el("self").classList.add("docked"); }
+function stopCamera(){
+  try { camStream && camStream.getTracks().forEach(t=>t.stop()); } catch {}
+  camStream = null; try { el("selfview").srcObject = null; } catch {}
+  el("self").classList.remove("show","docked","talking");
+}
+function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking", !!on); }
+
+// ---------- boot ----------
+(async function boot(){
+  try { cfg = { ...cfg, ...(await (await fetch("/api/config")).json()) }; } catch {}
+  const name = cfg.agentName || "Jonah";
+  el("pname").textContent = name; el("pinitial").textContent = name.charAt(0).toUpperCase();
+  el("brandsub").textContent = "with " + name;
+  el("attracttitle").textContent = "Meet " + name;
+  ptt = !!cfg.liveavatarPushToTalk;
+  if (!cfg.hasLiveAvatar){
+    el("attract").innerHTML = '<div class="kicker">ZICTA AI</div><h1>Add a LiveAvatar key</h1><p>Get one at <a href="https://app.liveavatar.com/developers" target="_blank">app.liveavatar.com/developers</a>, set <code>liveavatarApiKey</code> in <code>config.json</code>, restart, refresh.<br><br>Free 3D version: <a href="/avatar3d.html">/avatar3d.html</a></p>';
+    return;
+  }
+  el("startbtn").addEventListener("click", startEverything);
+  el("restartbtn").addEventListener("click", () => { hide("ended"); startEverything(); });
+  el("endbtn").addEventListener("click", () => gracefulDone("manual"));
+  el("plus20").textContent = "+" + (cfg.liveavatarExtendSeconds || 20) + "s";
+  el("plus20").addEventListener("click", extend);
+  el("selfiebtn").addEventListener("click", async () => {
+    const ok = await startCamera();
+    el("selfiebtn").classList.toggle("on", ok);
+    el("selfiebtn").textContent = ok ? "✓ Looking good!" : "📷 Camera unavailable";
+  });
+  startNet();
+})();
+
+// ---------- session ----------
+async function startEverything(){
+  ending=false; farewellPending=false; closing=false; goodbyeLive=false; revealed=false;
+  clearTimeout(returnTimer); clearTimeout(closeSafety); clearTimeout(farewellTimer); clearTimeout(revealFallback);
+  transcript=[]; curSender=null; curEl=null;
+  messages.innerHTML = '<div id="emptyhint">Listening…</div>';
+  hide("attract"); hide("ended"); show("connecting"); startConn(); if(net) net.pause();
+  if (camStream) dockSelf();   // glide the selfie circle into the chat corner
+  setDot(""); setFoot("Connecting…");
+  let tok;
+  try { tok = await (await fetch("/api/la-token",{method:"POST"})).json(); if(!tok.sessionToken) throw new Error(tok.error||"no session token"); }
+  catch(e){ return fail("Could not get a session: "+(e.message||e)); }
+  ptt = !!tok.pushToTalk;
+  try {
+    session = new LiveAvatarSession(tok.sessionToken, {
+      voiceChat: ptt ? { mode: SessionInteractivityMode.PUSH_TO_TALK } : true,
+      apiUrl: tok.apiUrl || "https://api.liveavatar.com",
+    });
+    wireEvents();
+    await session.start();
+    keepAlive = setInterval(()=>{ try { session && session.keepAlive(); } catch {} }, 150000);
+  } catch(e){ return fail("Could not start the avatar: "+(e.message||e)); }
+}
+
+function wireEvents(){
+  session.on(SessionEvent.SESSION_STREAM_READY, onStreamReady);
+  session.on(SessionEvent.SESSION_STATE_CHANGED, (st)=>{ if(st===SessionState.DISCONNECTED) onEnded(); });
+  session.on(SessionEvent.SESSION_CONNECTION_QUALITY_CHANGED, (q)=> setDot(/poor|lost/i.test(String(q||""))?"bad":"live"));
+  session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, ()=>{ if(!revealed) reveal(); bump(); selfTalking(true); if(!ptt) setTalk("speaking"); if (closing) goodbyeLive=true; });
+  session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, ()=>{ bump(); selfTalking(false); if(!ptt) setTalk("idle");
+    if (closing && goodbyeLive){ clearTimeout(closeSafety); return gracefulDone("timeup"); }
+    if (farewellPending){ farewellPending=false; clearTimeout(farewellTimer); setTimeout(()=>gracefulDone("farewell"), 900); } });
+  session.on(AgentEventsEnum.USER_SPEAK_STARTED, ()=>{ bump(); selfTalking(true); if(!ptt) setTalk("listening"); });
+  session.on(AgentEventsEnum.USER_SPEAK_ENDED, ()=>{ bump(); selfTalking(false); if(!ptt) setTalk("idle"); });
+  session.on(AgentEventsEnum.USER_TRANSCRIPTION_CHUNK, (e)=> bubble("user", e.text||"", false));
+  session.on(AgentEventsEnum.USER_TRANSCRIPTION, (e)=>{ finalize("user", e.text||""); if (isFarewell(e.text)) flagFarewell(); });
+  session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION_CHUNK, (e)=> bubble("avatar", e.text||"", true));
+  session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION, (e)=> finalize("avatar", e.text||""));
+}
+
+async function onStreamReady(){
+  try { session.attach(video); } catch(e){ console.warn(e); }
+  video.muted = true;                 // keep the greeting silent until we reveal the page
+  video.play().catch(()=>{});
+  pendingMicMsg = ptt ? "Press & hold the mic to talk." : "Listening — just speak. Tap mic to mute.";
+  try { await session.voiceChat.start(); } catch(e){ pendingMicMsg = "Allow the microphone to talk."; }
+  // reveal the moment she starts speaking (see AVATAR_SPEAK_STARTED); fallback if no greeting fires
+  clearTimeout(revealFallback);
+  revealFallback = setTimeout(reveal, 6000);
+}
+// reveal the chat (and unmute) so Oni is seen and heard together — never heard before seen
+function reveal(){
+  if (revealed) return; revealed = true; clearTimeout(revealFallback);
+  stopConn(); hide("connecting"); setDot("live"); el("endbtn").classList.add("show");
+  el("avatarWrap").classList.add("in"); el("panel").classList.add("in");
+  try { video.muted = false; video.play().catch(()=>{}); } catch {}
+  setTalk("idle"); setFoot(pendingMicMsg);
+  bump(); startTimer();
+  if (!cfg.liveavatarSandbox){
+    clearInterval(idleWatch);
+    idleWatch = setInterval(()=>{ if(session && Date.now()-lastActivity>IDLE_STOP_MS){ clearInterval(idleWatch); gracefulDone("idle"); } }, 10000);
+  }
+}
+
+// the "done" handler — fires on goodbye, idle, manual end, or disconnect
+function gracefulDone(reason){
+  if (ending || !session) return;
+  try { session.stop(); } catch {}   // triggers SESSION_STATE_CHANGED -> DISCONNECTED -> onEnded
+}
+function onEnded(){
+  if(ending) return; ending=true;
+  clearInterval(keepAlive); clearInterval(idleWatch); stopTimer(); clearTimeout(closeSafety); clearTimeout(farewellTimer); clearTimeout(revealFallback);
+  try { video.srcObject=null; } catch {}
+  stopCamera();
+  setDot(""); setFoot("Offline"); el("endbtn").classList.remove("show");
+  el("avatarWrap").classList.remove("in"); el("panel").classList.remove("in");
+  saveTranscript();
+  el("endtitle").textContent = "Thanks for chatting!";
+  el("endmsg").innerHTML = "Hope to see you again. Returning to the welcome screen…";
+  show("ended");
+  // booth auto-reset: back to the animated landing, ready for the next visitor
+  returnTimer = setTimeout(() => { hide("ended"); resetToAttract(); }, 7000);
+}
+function resetToAttract(){
+  messages.innerHTML = '<div id="emptyhint">Your conversation will appear here.</div>';
+  livecap.classList.remove("show"); livecap.textContent="";
+  session=null; ending=false; setFoot("Ready");
+  el("selfiebtn").classList.remove("on"); el("selfiebtn").textContent="📷 Take a selfie";
+  show("attract"); if(net) net.resume();
+}
+function saveTranscript(){
+  if (!transcript.length) return;
+  try {
+    const all = JSON.parse(localStorage.getItem("zicta_transcripts")||"[]");
+    all.push({ ended:new Date().toISOString(), turns:transcript });
+    localStorage.setItem("zicta_transcripts", JSON.stringify(all.slice(-200)));
+  } catch {}
+  console.log("ZICTA conversation transcript:", transcript);
+}
+function fail(msg){
+  stopConn(); hide("connecting");
+  el("endtitle").textContent="Something went wrong";
+  el("endmsg").innerHTML = msg + '<br><br>Check <code>config.json</code> (key, avatar, credits) and try again.';
+  show("ended");
+}
+
+// ---------- talk button ----------
+let muted=false, holding=false;
+async function toggleMute(){
+  if(!session) return;
+  try { if(muted){ await session.voiceChat.unmute(); muted=false; setTalk("idle"); setFoot("Mic on — just speak."); }
+        else { await session.voiceChat.mute(); muted=true; setTalk("muted"); setFoot("Muted. Tap mic to talk."); } }
+  catch(e){ console.warn(e); }
+}
+async function pttDown(ev){ ev.preventDefault(); if(!session||holding) return; holding=true; bump(); setTalk("listening");
+  try { await session.voiceChat.startPushToTalk(); } catch(e){ console.warn(e); } }
+async function pttUp(ev){ if(!session||!holding) return; holding=false; setTalk("idle");
+  try { await session.voiceChat.stopPushToTalk(); } catch(e){ console.warn(e); } }
+
+talk.addEventListener("click", ()=>{ if(!ptt) toggleMute(); });
+talk.addEventListener("pointerdown",(e)=>{ if(ptt) pttDown(e); });
+talk.addEventListener("pointerup",(e)=>{ if(ptt) pttUp(e); });
+talk.addEventListener("pointerleave",(e)=>{ if(ptt) pttUp(e); });
+talk.addEventListener("pointercancel",(e)=>{ if(ptt) pttUp(e); });
+document.addEventListener("keydown",(e)=>{ if(e.code==="Space"&&ptt&&!e.repeat){ e.preventDefault(); pttDown(e);} });
+document.addEventListener("keyup",(e)=>{ if(e.code==="Space"&&ptt){ e.preventDefault(); pttUp(e);} });
+window.addEventListener("beforeunload",()=>{ try{ session && session.stop(); }catch{} });
+</script>
+</body>
+</html>

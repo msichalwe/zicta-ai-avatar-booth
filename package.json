@@ -1,0 +1,9 @@
+{
+  "name": "zicta-ai-avatar-booth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Interactive 3D AI avatar for a trade fair booth (TalkingHead + Ready Player Me + Claude + Google TTS).",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

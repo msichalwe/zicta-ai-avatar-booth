@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>ZICTA AI Host</title>
+<style>
+  :root { --accent: #18c29c; --accent2: #0e7c66; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #06101f;
+    font-family: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif; color: #fff; }
+
+  /* animated gradient backdrop (canvas is transparent and floats above it) */
+  #bg { position: fixed; inset: 0; z-index: 0;
+    background: linear-gradient(125deg, #071a33, #0e7c66, #123a8a, #5b2a86, #071a33);
+    background-size: 320% 320%; animation: grad 28s ease-in-out infinite; }
+  #bg::after { content: ""; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 120%, rgba(0,0,0,.55), transparent 60%); }
+  @keyframes grad {
+    0%{background-position:0% 50%} 25%{background-position:60% 20%}
+    50%{background-position:100% 50%} 75%{background-position:40% 80%}
+    100%{background-position:0% 50%} }
+
+  #avatar { position: fixed; inset: 0; width: 100vw; height: 100vh; background: transparent; z-index: 1; }
+  #avatar canvas { outline: none; }
+
+  #brand { position: fixed; top: 24px; left: 28px; font-size: 20px; font-weight: 700;
+    letter-spacing: .5px; opacity: .9; text-shadow: 0 2px 14px rgba(0,0,0,.85); z-index: 5; }
+  #brand small { display: block; font-weight: 400; font-size: 12px; opacity: .65; }
+  #badge { position: fixed; top: 24px; right: 28px; font-size: 12px; opacity: .55; z-index: 5;
+    text-align: right; text-shadow: 0 1px 8px rgba(0,0,0,.8); }
+
+  #caption { position: fixed; left: 50%; bottom: 200px; transform: translateX(-50%);
+    max-width: min(82vw, 780px); text-align: center; font-size: clamp(20px, 3.2vw, 34px);
+    line-height: 1.35; font-weight: 600; text-shadow: 0 2px 22px rgba(0,0,0,.95);
+    z-index: 5; transition: opacity .3s; min-height: 1.4em; padding: 0 16px; }
+  #caption.user { opacity: .8; font-style: italic; font-weight: 500; font-size: clamp(16px, 2.4vw, 24px); }
+
+  #talk { position: fixed; left: 50%; bottom: 60px; transform: translateX(-50%);
+    width: 120px; height: 120px; border-radius: 50%; border: none; cursor: pointer;
+    background: radial-gradient(circle at 35% 30%, var(--accent), var(--accent2));
+    color: #fff; font-size: 15px; font-weight: 800; letter-spacing: .5px; z-index: 6;
+    box-shadow: 0 12px 44px rgba(24,194,156,.5), inset 0 2px 10px rgba(255,255,255,.3);
+    transition: transform .15s, box-shadow .2s, background .25s; }
+  #talk:active { transform: translateX(-50%) scale(.94); }
+  #talk .ico { font-size: 36px; display: block; line-height: 1; margin-bottom: 4px; }
+  #talk.listening { background: radial-gradient(circle at 35% 30%, #ff5d6c, #b3243a); animation: pulse 1.2s infinite; }
+  #talk.thinking { background: radial-gradient(circle at 35% 30%, #f5b942, #b9831a); animation: spinhint 1.4s linear infinite; }
+  #talk.speaking { background: radial-gradient(circle at 35% 30%, #5b9bff, #2155b9); }
+  #talk.sleeping { background: radial-gradient(circle at 35% 30%, #4a4a4a, #222); opacity: .85; }
+  #talk[disabled] { opacity: .5; cursor: default; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(255,93,108,.6);} 70%{box-shadow:0 0 0 30px rgba(255,93,108,0);} 100%{box-shadow:0 0 0 0 rgba(255,93,108,0);} }
+  @keyframes spinhint { 0%{filter:brightness(1);} 50%{filter:brightness(1.3);} 100%{filter:brightness(1);} }
+
+  #hint { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+    font-size: 13px; opacity: .55; z-index: 6; text-align: center; text-shadow: 0 1px 8px rgba(0,0,0,.8); }
+  #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 18px; background: #06101f; z-index: 20; font-size: 18px; }
+  .spinner { width: 46px; height: 46px; border: 3px solid #284; border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
+  }
+}
+</script>
+</head>
+<body>
+  <div id="bg"></div>
+  <div id="avatar"></div>
+  <div id="brand">ZICTA AI<small id="brandsub">Interactive Host</small></div>
+  <div id="badge"></div>
+  <div id="caption"></div>
+  <button id="talk" disabled><span class="ico">●</span><span id="talklabel">LOADING</span></button>
+  <div id="hint">Tap the circle or press SPACE to talk · press A to switch avatar</div>
+  <div id="loading"><div class="spinner"></div><div id="loadmsg">Waking up the avatar…</div></div>
+
+<script type="module">
+import { TalkingHead } from "talkinghead";
+import { KokoroTTS } from "https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm";
+
+const el = (id) => document.getElementById(id);
+const talkBtn = el("talk"), talkLabel = el("talklabel"), talkIco = talkBtn.querySelector(".ico");
+const caption = el("caption"), hint = el("hint");
+
+let head = null;
+let cfg = { hasBrain:false, hasTTS:false, agentName:"Avatar", greeting:"Hi!", avatarBody:"F", kokoroVoice:"af_heart" };
+let state = "idle";
+let history = [];
+let lastInteraction = Date.now();
+const IDLE_SLEEP_MS = 60000;
+let audioCtx = null;
+
+// in-browser neural TTS
+let kokoro = null, kokoroReady = false, kokoroLoading = false;
+
+// avatars you can flip between live (press A)
+const BUNDLED = [
+  { name:"Avaturn",   url:"/avatars/avaturn.glb",   body:"M" },
+  { name:"AvatarSDK", url:"/avatars/avatarsdk.glb", body:"M" },
+  { name:"Brunette",  url:"/avatars/brunette.glb",  body:"F" },
+  { name:"VRoid",     url:"/avatars/vroid.glb",     body:"F" },
+];
+let avatarIdx = 0;
+
+function setState(s) {
+  state = s; talkBtn.className = s;
+  const map = { idle:["●","TAP TO TALK"], listening:["◉","LISTENING…"],
+    thinking:["…","THINKING…"], speaking:["♪","SPEAKING…"], sleeping:["zZ","TAP TO WAKE"] };
+  talkIco.textContent = map[s][0]; talkLabel.textContent = map[s][1];
+}
+function showCaption(text, isUser) { caption.textContent = text || ""; caption.classList.toggle("user", !!isUser); }
+function updateBadge() {
+  const voice = cfg.hasTTS ? "Google voice" : (kokoroReady ? "Kokoro voice" : (kokoroLoading ? "voice loading…" : "browser voice"));
+  el("badge").innerHTML = (cfg.hasBrain ? "Claude" : "demo brain") + " · " + voice +
+    "<br>" + BUNDLED[avatarIdx].name;
+}
+
+// ---------- boot ----------
+(async function boot() {
+  try { cfg = { ...cfg, ...(await (await fetch("/api/config")).json()) }; } catch {}
+  el("brandsub").textContent = cfg.agentName || "Interactive Host";
+
+  head = new TalkingHead(el("avatar"), {
+    lipsyncModules: ["en"], cameraView: "upper", cameraRotateEnable: false,
+    avatarMood: "neutral", modelFPS: 30,
+  });
+
+  // pick starting avatar from config if it matches a bundled one
+  const i = BUNDLED.findIndex((a) => a.url === cfg.avatarUrl);
+  if (i >= 0) avatarIdx = i;
+  const start = i >= 0 ? BUNDLED[avatarIdx] : { url: cfg.avatarUrl, body: cfg.avatarBody || "F" };
+
+  try {
+    await head.showAvatar(
+      { url: start.url, body: start.body, avatarMood: "neutral", lipsyncLang: "en" },
+      (ev) => { if (ev.lengthComputable) el("loadmsg").textContent = "Loading avatar… " + Math.round(ev.loaded/ev.total*100) + "%"; }
+    );
+    head.setView("upper");
+  } catch (e) {
+    el("loadmsg").textContent = "Could not load avatar. Check avatarUrl in config.json.";
+    console.error(e); return;
+  }
+
+  el("loading").style.display = "none";
+  talkBtn.disabled = false;
+  setState("idle");
+  setupSTT();
+  updateBadge();
+  setInterval(idleCheck, 5000);
+
+  // load the neural voice in the background, greet once ready (button works meanwhile)
+  if (!cfg.hasTTS) {
+    loadKokoro().finally(() => { updateBadge(); setTimeout(greet, 400); });
+  } else {
+    setTimeout(greet, 500);
+  }
+})();
+
+function greet() { if (cfg.greeting) speak(cfg.greeting, { mood: "happy" }); }
+
+// ---------- Kokoro neural TTS ----------
+// Smaller WASM/q8 model first (~80MB, works everywhere). Set USE_WEBGPU=true for
+// faster inference at the cost of a larger one-time download (~330MB).
+const USE_WEBGPU = false;
+async function loadKokoro() {
+  if (kokoroReady || kokoroLoading) return;
+  kokoroLoading = true; updateBadge();
+  const attempts = USE_WEBGPU && navigator.gpu
+    ? [{ device: "webgpu", dtype: "fp32" }, { device: "wasm", dtype: "q8" }]
+    : [{ device: "wasm", dtype: "q8" }];
+  for (const opt of attempts) {
+    try {
+      kokoro = await KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", {
+        ...opt,
+        progress_callback: (p) => {
+          if (p && p.status === "progress" && p.total)
+            el("loadmsg").textContent = "Loading voice (" + opt.device + ")… " + Math.round((p.loaded/p.total)*100) + "%";
+        },
+      });
+      kokoroReady = true; break;
+    } catch (e) { console.warn("Kokoro load failed on", opt.device, e); }
+  }
+  if (!kokoroReady) console.warn("Kokoro unavailable — using browser voice.");
+  kokoroLoading = false;
+}
+
+// distribute words across the real audio duration -> tight lip-sync without paid timing data
+function distributeWords(text, durMs) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const weights = words.map((w) => Math.max(1.2, (w.replace(/[^A-Za-z]/g, "").length) + (/[.,!?;:]$/.test(w) ? 2.5 : 0)));
+  const sum = weights.reduce((a, b) => a + b, 0) || 1;
+  const wtimes = [], wdurations = [];
+  let t = 0;
+  for (let i = 0; i < words.length; i++) {
+    const d = durMs * (weights[i] / sum);
+    wtimes.push(Math.round(t));
+    wdurations.push(Math.max(60, Math.round(d * 0.92)));
+    t += d;
+  }
+  return { words, wtimes, wdurations };
+}
+
+async function speakKokoro(text) {
+  const out = await kokoro.generate(text, { voice: cfg.kokoroVoice || "af_heart" });
+  const sr = out.sampling_rate || 24000;
+  const f32 = out.audio;
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") await audioCtx.resume();
+  const buf = audioCtx.createBuffer(1, f32.length, sr);
+  buf.copyToChannel(f32, 0);
+  const durMs = (f32.length / sr) * 1000;
+  const { words, wtimes, wdurations } = distributeWords(text, durMs);
+  await new Promise((resolve) => {
+    head.speakAudio({ audio: buf, words, wtimes, wdurations }, { lipsyncLang: "en" }, null);
+    setTimeout(resolve, durMs + 250);
+  });
+}
+
+// ---------- idle / sleep ----------
+function idleCheck() {
+  if (state === "idle" && Date.now() - lastInteraction > IDLE_SLEEP_MS) {
+    setState("sleeping"); try { head.setMood("sleep"); } catch {} showCaption("");
+  }
+}
+function wake() {
+  lastInteraction = Date.now();
+  if (state === "sleeping") { try { head.setMood("neutral"); } catch {} setState("idle"); }
+}
+
+// ---------- speech recognition (free, browser) ----------
+let recog = null, recognizing = false, finalText = "";
+function setupSTT() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { hint.textContent = "This browser has no speech recognition — use Chrome."; return; }
+  recog = new SR();
+  recog.lang = "en-US"; recog.interimResults = true; recog.continuous = false; recog.maxAlternatives = 1;
+  recog.onresult = (e) => {
+    let interim = ""; finalText = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalText += t; else interim += t;
+    }
+    showCaption(finalText || interim, true);
+  };
+  recog.onend = () => {
+    recognizing = false;
+    const said = finalText.trim();
+    if (said) handleUserSpeech(said);
+    else if (state === "listening") setState("idle");
+  };
+  recog.onerror = (e) => {
+    recognizing = false;
+    if (state === "listening") { setState("idle"); if (e.error === "no-speech") showCaption("Didn't catch that — tap and try again.", true); }
+  };
+}
+function startListening() {
+  if (!recog || recognizing) return;
+  try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
+  finalText = ""; recognizing = true; showCaption(""); setState("listening");
+  try { recog.start(); } catch { recognizing = false; setState("idle"); }
+}
+
+// ---------- main turn ----------
+async function handleUserSpeech(text) {
+  lastInteraction = Date.now();
+  setState("thinking"); showCaption(text, true);
+  history.push({ role: "user", content: text });
+  try {
+    const r = await fetch("/api/chat", { method:"POST", headers:{"content-type":"application/json"},
+      body: JSON.stringify({ messages: history.slice(-12) }) });
+    const data = await r.json();
+    const reply = data.reply || "Sorry, I had a little glitch. Could you say that again?";
+    history.push({ role: "assistant", content: reply });
+    await speak(reply, { mood: "happy" });
+  } catch (e) { console.error(e); setState("idle"); showCaption("Connection hiccup — please try again."); }
+}
+
+// ---------- speaking: Google TTS > Kokoro > browser ----------
+async function speak(text, opt = {}) {
+  setState("speaking"); showCaption(text, false);
+  try { if (opt.mood) head.setMood(opt.mood); } catch {}
+  let done = false;
+
+  if (cfg.hasTTS) {
+    try { done = await speakGoogle(text); } catch (e) { console.warn("Google TTS failed:", e); }
+  }
+  if (!done && kokoroReady) {
+    try { await speakKokoro(text); done = true; } catch (e) { console.warn("Kokoro failed:", e); }
+  }
+  if (!done) await speakBrowser(text);
+
+  if (state === "speaking") setState("idle");
+  try { head.setMood("neutral"); } catch {}
+}
+
+async function speakGoogle(text) {
+  const r = await fetch("/api/tts", { method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({ text }) });
+  const data = await r.json();
+  if (!data || !data.audioBase64) return false;
+  const buf = await decodeBase64Audio(data.audioBase64);
+  await new Promise((resolve) => {
+    head.speakAudio({ audio: buf, words: data.words, wtimes: data.wtimes, wdurations: data.wdurations }, { lipsyncLang: "en" }, null);
+    const total = (data.wtimes[data.wtimes.length-1]||0) + (data.wdurations[data.wdurations.length-1]||400) + 250;
+    setTimeout(resolve, total);
+  });
+  return true;
+}
+async function decodeBase64Audio(b64) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") await audioCtx.resume();
+  const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return await audioCtx.decodeAudioData(bytes.buffer);
+}
+
+// last-resort fallback voice
+function speakBrowser(text) {
+  return new Promise(async (resolve) => {
+    const { words, wtimes, wdurations } = distributeWords(text, Math.max(1200, text.length * 65));
+    const totalMs = wtimes[wtimes.length-1] + wdurations[wdurations.length-1];
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") await audioCtx.resume();
+      const sr = audioCtx.sampleRate;
+      const silent = audioCtx.createBuffer(1, Math.ceil((totalMs/1000)*sr) || sr, sr);
+      head.speakAudio({ audio: silent, words, wtimes, wdurations }, { lipsyncLang: "en" }, null);
+    } catch (e) { console.warn(e); }
+    if (window.speechSynthesis) {
+      try { window.speechSynthesis.cancel(); } catch {}
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-GB"; const v = pickVoice(); if (v) u.voice = v;
+      u.onend = () => resolve(); u.onerror = () => resolve();
+      window.speechSynthesis.speak(u);
+      setTimeout(resolve, totalMs + 1500);
+    } else setTimeout(resolve, totalMs + 200);
+  });
+}
+function pickVoice() {
+  const vs = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  return vs.find((v)=>/en-GB/i.test(v.lang)) || vs.find((v)=>/en[-_]/i.test(v.lang)) || vs[0] || null;
+}
+if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = pickVoice;
+
+// ---------- avatar switcher ----------
+let switching = false;
+async function cycleAvatar() {
+  if (switching || !head) return;
+  switching = true;
+  avatarIdx = (avatarIdx + 1) % BUNDLED.length;
+  const a = BUNDLED[avatarIdx];
+  el("badge").innerHTML = (cfg.hasBrain ? "Claude" : "demo brain") + " · …<br>Loading " + a.name + "…";
+  try { await head.showAvatar({ url:a.url, body:a.body, avatarMood:"neutral", lipsyncLang:"en" }); head.setView("upper"); }
+  catch (e) { console.error(e); }
+  switching = false; updateBadge();
+}
+
+// ---------- input ----------
+talkBtn.addEventListener("click", () => {
+  if (talkBtn.disabled) return;
+  if (state === "sleeping") return wake();
+  if (state === "speaking") { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {} try { head.stopSpeaking && head.stopSpeaking(); } catch {} setState("idle"); return; }
+  if (state === "listening") { try { recog.stop(); } catch {} return; }
+  startListening();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space" && !e.repeat) { e.preventDefault(); talkBtn.click(); }
+  else if ((e.key === "a" || e.key === "A") && !e.repeat) { cycleAvatar(); }
+});
+</script>
+</body>
+</html>
