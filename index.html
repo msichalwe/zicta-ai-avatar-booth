@@ -46,7 +46,7 @@
   /* webcam self-view: BIG live circle on the landing (the attractor), glides to chat corner */
   #self { position:fixed; z-index:30; overflow:hidden; background:#0a1626; opacity:0; pointer-events:auto;
     border:4px solid rgba(255,255,255,.92);
-    left:50%; top:31%; width:clamp(230px,27vw,310px); height:clamp(230px,27vw,310px); border-radius:50%;
+    left:50%; top:31%; width:clamp(230px,27vw,310px); height:clamp(230px,27vw,310px); border-radius:34px;
     transform:translate(-50%,-50%) scale(.92);
     transition:left .9s cubic-bezier(.6,.05,.2,1), top .9s cubic-bezier(.6,.05,.2,1),
                width .9s cubic-bezier(.6,.05,.2,1), height .9s cubic-bezier(.6,.05,.2,1),
@@ -96,7 +96,7 @@
 
   /* chat panel (right) */
   #panel { flex:0 0 clamp(330px,32vw,460px); display:flex; flex-direction:column;
-    background:var(--panel); backdrop-filter:blur(18px); border:1px solid rgba(255,255,255,.7);
+    background:var(--panel); backdrop-filter:blur(7px); border:1px solid rgba(255,255,255,.7);
     border-radius:26px; overflow:hidden; box-shadow:0 24px 70px rgba(20,50,90,.22);
     opacity:0; transform:translateY(8px); transition:opacity .5s .1s, transform .5s .1s; }
   #panel.in { opacity:1; transform:none; }
@@ -181,6 +181,20 @@
   @keyframes spin { to{transform:rotate(360deg)} }
   .hidden { display:none !important; }
   #quiz { display:none; }   /* shown only on portrait kiosks (fills the tall space) */
+
+  /* ambient rising bubbles — fill the white space with gentle motion */
+  #bubbles { position:absolute; inset:0; z-index:1; overflow:hidden; pointer-events:none; }
+  #bubbles .b { position:absolute; bottom:-90px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.65), rgba(15,191,152,.20)); animation:riseb linear infinite; }
+  @keyframes riseb { 0%{transform:translateY(0) scale(.5);opacity:0} 12%{opacity:.7} 88%{opacity:.5} 100%{transform:translateY(-115vh) scale(1.05);opacity:0} }
+  /* burst of bubbles when you tap "Take a selfie" */
+  .burst-b { position:fixed; border-radius:50%; pointer-events:none; z-index:40; opacity:.95;
+    transform:translate(-50%,-50%) scale(.2);
+    background:radial-gradient(circle at 35% 30%, #fff, var(--accent)); animation:burst .95s cubic-bezier(.2,.7,.3,1) forwards; }
+  @keyframes burst { to { transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); opacity:0; } }
+  .chip { cursor:pointer; }
+  .chip:active { transform:scale(.94); }
+  #loadfact { margin-top:14px; font-size:14px; color:var(--muted); max-width:540px; line-height:1.45; min-height:1.3em; opacity:.9; transition:opacity .25s; }
 
   /* ---- landing pazazz ---- */
   #net { position:absolute; inset:0; z-index:0; width:100%; height:100%; }
@@ -290,6 +304,7 @@
   <!-- animated landing -->
   <div id="attract" class="overlay">
     <canvas id="net"></canvas>
+    <div id="bubbles"></div>
     <div class="orbs"><span></span><span></span><span></span><span></span></div>
     <div class="kicker">ZICTA · ZAMBIA ICT AUTHORITY</div>
     <h1 id="attracttitle">Meet Jonah</h1>
@@ -315,6 +330,7 @@
     <div class="loader"><span class="lring"></span><span class="orb"><img src="/assets/oni.jpg" alt="" /></span></div>
     <p id="connmsg">Waking up…</p>
     <div class="dots"><i></i><i></i><i></i></div>
+    <div id="loadfact"></div>
   </div>
   <div id="ended" class="overlay hidden"><h1 id="endtitle">Thanks for chatting!</h1><p id="endmsg"></p><button class="bigbtn" id="restartbtn">Start again</button></div>
 
@@ -410,37 +426,79 @@ function finalize(sender, text){
 let net = null;
 function startNet(){
   const c = el("net"); if (!c || net) return;
-  const ctx = c.getContext("2d"); const dpr = Math.min(2, window.devicePixelRatio || 1);
-  let w=0,h=0,raf=0,running=true; const nodes=[];
-  const size=()=>{ w=c.width=c.offsetWidth*dpr; h=c.height=c.offsetHeight*dpr; };
+  const ctx = c.getContext("2d");
+  let w=0,h=0,raf=0,running=true,last=0; const nodes=[];
+  // cap the canvas backing resolution (huge perf win on 4K screens) and let CSS stretch it
+  const size=()=>{ const cw=c.offsetWidth||innerWidth, ch=c.offsetHeight||innerHeight;
+    const s=Math.min(1, 1300/Math.max(cw,ch,1)); w=c.width=Math.max(2,(cw*s)|0); h=c.height=Math.max(2,(ch*s)|0); };
   size();
-  const N = Math.max(26, Math.min(60, Math.floor((c.offsetWidth||900)/26)));
-  for(let i=0;i<N;i++) nodes.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.18*dpr,vy:(Math.random()-.5)*.18*dpr});
-  const MAX=150*dpr;
-  function frame(){
+  const N=32, MAX=120;
+  for(let i=0;i<N;i++) nodes.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25});
+  function frame(t){
+    if(!running) return;
+    raf=requestAnimationFrame(frame);
+    if(t-last<33) return; last=t;                 // ~30fps cap (matches the screen)
     ctx.clearRect(0,0,w,h);
     for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w)n.vx*=-1; if(n.y<0||n.y>h)n.vy*=-1; }
-    for(let i=0;i<nodes.length;i++) for(let j=i+1;j<nodes.length;j++){
+    for(let i=0;i<N;i++) for(let j=i+1;j<N;j++){
       const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.hypot(dx,dy);
-      if(d<MAX){ ctx.strokeStyle="rgba(15,191,152,"+(.18*(1-d/MAX)).toFixed(3)+")"; ctx.lineWidth=dpr;
+      if(d<MAX){ ctx.strokeStyle="rgba(15,191,152,"+(.18*(1-d/MAX)).toFixed(3)+")"; ctx.lineWidth=1;
         ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); }
     }
-    for(const n of nodes){ ctx.fillStyle="rgba(47,109,246,.55)"; ctx.beginPath(); ctx.arc(n.x,n.y,2*dpr,0,7); ctx.fill(); }
-    if(running) raf=requestAnimationFrame(frame);
+    for(const n of nodes){ ctx.fillStyle="rgba(47,109,246,.55)"; ctx.beginPath(); ctx.arc(n.x,n.y,2,0,7); ctx.fill(); }
   }
-  window.addEventListener("resize", size);
-  frame();
-  net = { pause(){ running=false; cancelAnimationFrame(raf); }, resume(){ if(!running){ running=true; size(); frame(); } } };
+  addEventListener("resize", size);
+  raf=requestAnimationFrame(frame);
+  net = { pause(){ running=false; cancelAnimationFrame(raf); }, resume(){ if(!running){ running=true; last=0; raf=requestAnimationFrame(frame); } } };
 }
 
-// animated loading screen text
+// ambient rising bubbles (fill the white space)
+function spawnBubbles(){
+  const host=el("bubbles"); if(!host||host.childElementCount) return;
+  for(let i=0;i<16;i++){
+    const b=document.createElement("span"); b.className="b";
+    const sz=18+Math.random()*64; b.style.width=b.style.height=sz+"px";
+    b.style.left=(Math.random()*100)+"%";
+    b.style.animationDuration=(10+Math.random()*14)+"s";
+    b.style.animationDelay=(-Math.random()*20)+"s";
+    host.appendChild(b);
+  }
+}
+// burst of bubbles around the selfie square on tap
+function selfieBurst(){
+  const s=el("self"); if(!s) return;
+  const r=s.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+  for(let i=0;i<18;i++){
+    const b=document.createElement("span"); b.className="burst-b";
+    const ang=Math.random()*6.283, dist=r.width*0.45+40+Math.random()*180, sz=10+Math.random()*28;
+    b.style.cssText="left:"+cx+"px;top:"+cy+"px;width:"+sz+"px;height:"+sz+"px;--dx:"+(Math.cos(ang)*dist)+"px;--dy:"+(Math.sin(ang)*dist)+"px";
+    document.body.appendChild(b); setTimeout(()=>b.remove(),1000);
+  }
+}
+// rotating facts for the loading screen
+const FACTS=[
+  "Dial *#06# to see your phone's IMEI — note it down in case it's lost.",
+  "ZICTA's toll-free line is 7070 — free on any Zambian network.",
+  "Never share your mobile-money PIN — not even with 'support'.",
+  "SIM cards must be registered with a valid ID (NRC or passport).",
+  "Report online scams or fraud to the Zambia Police on 991.",
+  "Buy phones from registered dealers — look for type-approved devices.",
+];
+
+// animated loading screen text + facts
 let connTimer=null, connAt=0;
 function startConn(){
-  const name = cfg.agentName || "Jonah";
+  const name = cfg.agentName || "Oni";
   const msgs = ["Waking up "+name+"…","Connecting securely…","Setting up your conversation…","Almost ready…"];
-  let i=0; const m=el("connmsg"); m.textContent=msgs[0]; m.style.opacity=1; connAt=Date.now();
+  const m=el("connmsg"), fEl=el("loadfact");
+  let i=0, k=0, fi=Math.floor(Math.random()*FACTS.length);
+  m.textContent=msgs[0]; m.style.opacity=1; connAt=Date.now();
+  if(fEl) fEl.textContent="💡 "+FACTS[fi];
   clearInterval(connTimer);
-  connTimer=setInterval(()=>{ i=(i+1)%msgs.length; m.style.opacity=0; setTimeout(()=>{ m.textContent=msgs[i]; m.style.opacity=1; },220); }, 1500);
+  connTimer=setInterval(()=>{
+    i=(i+1)%msgs.length; m.style.opacity=0; setTimeout(()=>{ m.textContent=msgs[i]; m.style.opacity=1; },220);
+    if(fEl && (++k%2===0)){ fi=(fi+1)%FACTS.length; fEl.style.opacity=0; setTimeout(()=>{ fEl.textContent="💡 "+FACTS[fi]; fEl.style.opacity=.9; },220); }
+  }, 1600);
 }
 function stopConn(){ clearInterval(connTimer); }
 
@@ -521,16 +579,20 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
   el("plus20").addEventListener("click", extend);
   el("selfiebtn").addEventListener("click", async (e) => {
     e.stopPropagation();
-    if (camStream) {                               // already live -> snap a fun "selfie" flash
+    if (camStream) {                               // already live -> flash + burst of bubbles
       const f = el("flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+      selfieBurst();
     } else {
       await startCamera();                          // request camera (gesture)
     }
   });
+  // tap an example question to jump straight into talking
+  document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", startEverything));
   startNet();
+  spawnBubbles();                                   // ambient motion to fill the white space
   renderQuiz();                                     // interactive quiz (portrait kiosk)
-  startCamera();                                    // auto-show the live "you" circle on the landing
-  console.log("ZICTA build: portrait + quiz + https v5");
+  startCamera();                                    // auto-show the live "you" square on the landing
+  console.log("ZICTA build: perf + bubbles + square selfie v6");
 })();
 
 // ---------- session ----------
