@@ -256,13 +256,13 @@
   @keyframes bounce {0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-9px);opacity:1}}
 
   /* ============================================================
-     v10 — DARK LIQUID-GLASS LANDING + LOADING
-     Refined typography, glassy cards, deep dark hero — chat page stays bright.
+     v11 — CLEAN CARD LANDING (iOS-style tiles on pastel hue background)
+     5 tiles: Talk to Oni, Live You, Quiz, Did You Know, Contact.
      ============================================================ */
-  body { font-family: 'Poppins', -apple-system, "Segoe UI", Roboto, system-ui, sans-serif; }
-  /* liquid-glass utility: subtle frosted surface with a gradient hairline border via ::before */
-  .lg { position:relative; overflow:hidden;
-    background:rgba(255,255,255,.05);
+  body { font-family:'Poppins', -apple-system, "Segoe UI", Roboto, system-ui, sans-serif; }
+
+  /* (kept for the gradient-hairline trick — used by .lg if needed elsewhere) */
+  .lg { position:relative; overflow:hidden; background:rgba(255,255,255,.05);
     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
     box-shadow:inset 0 1px 1px rgba(255,255,255,.10); }
   .lg::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1.4px;
@@ -270,73 +270,101 @@
     -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
 
-  /* Dark landing background */
+  /* Pastel hue background for the landing */
   #attract {
     background:
-      radial-gradient(1100px 700px at 18% 18%, hsla(280,70%,28%,.45), transparent 60%),
-      radial-gradient(900px 700px at 82% 82%, hsla(220,70%,28%,.40), transparent 60%),
-      radial-gradient(900px 700px at 78% 12%, hsla(160,60%,22%,.30), transparent 60%),
-      hsl(260,87%,3%);
+      radial-gradient(900px 700px at 0%   0%,   #ffe6f3, transparent 62%),
+      radial-gradient(900px 700px at 100% 0%,   #e0f0ff, transparent 62%),
+      radial-gradient(900px 700px at 50%  100%, #e6fff5, transparent 62%),
+      radial-gradient(900px 700px at 100% 60%,  #fff2dc, transparent 62%),
+      #f6f8fc;
     animation:none;
-    color:hsl(40,6%,95%);
+    color:#1a1a2e;
+    justify-content:flex-start; align-items:stretch;
+    padding:clamp(20px, 3vw, 44px);
+    overflow-y:auto;
   }
-  #attract .kicker { color:rgba(255,255,255,.55); font-weight:600; letter-spacing:.4em; font-size:12px; }
-  /* Headline: Poppins for "Meet", italic serif for the name */
-  #attract h1 {
-    font-family:'Poppins', sans-serif; font-weight:500; letter-spacing:-.03em;
-    background:none; -webkit-background-clip:initial; background-clip:initial;
-    color:hsl(40,6%,96%); -webkit-text-fill-color:hsl(40,6%,96%);
-  }
-  #attract h1 .accent {
+
+  .page { width:100%; max-width:1100px; margin:0 auto; display:flex; flex-direction:column; gap:clamp(20px,2.6vw,32px); }
+  .phead { text-align:center; }
+  .phead .kicker { font-size:12px; letter-spacing:.4em; color:#6b7280; font-weight:700; }
+  .phead h1 { font-family:'Poppins',sans-serif; font-weight:600; font-size:clamp(40px,6vw,80px);
+    color:#1a1a2e; margin:10px 0 8px; letter-spacing:-.02em; line-height:1.04;
+    background:none; -webkit-background-clip:initial; background-clip:initial; -webkit-text-fill-color:#1a1a2e; animation:none; }
+  .phead h1 .accent { font-family:'Source Serif 4', Georgia, serif; font-style:italic; font-weight:500;
+    background:linear-gradient(120deg, #6366f1, #be185d 60%, #d97706);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .phead p { font-size:clamp(15px,1.7vw,18px); color:#4b5563; max-width:600px; margin:0 auto; line-height:1.5; }
+
+  /* Card grid */
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:clamp(16px,1.6vw,22px); }
+  .card { position:relative; border-radius:28px; padding:clamp(20px,2.2vw,30px);
+    box-shadow:0 14px 40px rgba(20,30,60,.08), 0 2px 6px rgba(20,30,60,.04);
+    overflow:hidden; transition:transform .25s ease, box-shadow .25s ease;
+    display:flex; flex-direction:column; gap:6px; }
+  .card h2, .card h3 { font-family:'Poppins',sans-serif; font-weight:600; margin:0; }
+  .card h2 { font-size:clamp(28px,3.4vw,44px); line-height:1.1; letter-spacing:-.01em; }
+  .card h3 { font-size:clamp(18px,2vw,22px); letter-spacing:-.005em; }
+  .card p { font-size:clamp(14px,1.6vw,17px); line-height:1.5; opacity:.9; margin:0; }
+  .card:active { transform:scale(.992); }
+
+  /* Hero "Talk to Oni" — full-width mint card */
+  .card-oni { grid-column:1 / -1; cursor:pointer;
+    background:linear-gradient(135deg, #eafff1, #c6f1d8 75%);
+    color:#053f30; min-height:200px; justify-content:space-between; gap:14px; }
+  .card-oni h2 .accent {
     font-family:'Source Serif 4', Georgia, serif; font-style:italic; font-weight:500;
-    background:linear-gradient(120deg, #d4cffd, #f0e3ff 60%, #ffd8a8);
+    background:linear-gradient(120deg, #0a8f73, #1f4fd0);
     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
   }
-  #attract p { color:hsla(40,6%,95%,.78); }
+  .card-cta { align-self:flex-start; margin-top:10px; padding:clamp(12px,1.4vw,16px) clamp(24px,2.6vw,34px);
+    border-radius:999px; background:#0a8f73; color:#fff; border:none; cursor:pointer;
+    font-family:'Poppins',sans-serif; font-weight:600; font-size:clamp(15px,1.7vw,18px);
+    box-shadow:0 12px 28px rgba(10,143,115,.35); transition:transform .12s, box-shadow .25s; }
+  .card-cta:hover { transform:translateY(-1px); }
 
-  /* Chips as glass pills (dark) */
-  #attract .chip {
-    background:rgba(255,255,255,.04); color:rgba(255,255,255,.88);
-    border:none; box-shadow:none;
-  }
-  /* CTA — glass on dark */
-  #attract .bigbtn {
-    background:rgba(255,255,255,.08); color:hsl(40,6%,98%);
-    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-    box-shadow:0 18px 50px rgba(0,0,0,.4), inset 0 1px 1px rgba(255,255,255,.2);
-    font-family:'Poppins',sans-serif;
-  }
-  #attract .cta-wrap .ring { border-color:rgba(255,255,255,.22); }
+  /* Live · You — lavender, holds the webcam slot */
+  .card-you { background:linear-gradient(135deg, #f3edff, #e2d5ff 75%); color:#2a1654; }
+  #selfslot { position:relative; width:100%; aspect-ratio:4/3; border-radius:20px; overflow:hidden;
+    background:#1a1a2e; margin-top:6px; }
 
-  /* Quiz card on dark */
-  #attract #quiz {
-    background:rgba(255,255,255,.04); color:hsl(40,6%,95%); border:none;
-    box-shadow:0 18px 40px rgba(0,0,0,.35), inset 0 1px 1px rgba(255,255,255,.1);
-  }
-  #attract #quiz .qhead { color:rgba(255,255,255,.6); }
-  #attract #quiz .qq { color:hsl(40,6%,95%); }
-  #attract #quiz .qopt { background:rgba(255,255,255,.03); color:hsl(40,6%,95%);
-    border:1px solid rgba(255,255,255,.12); }
-  #attract #quiz .qopt.correct { background:rgba(15,191,152,.20); border-color:rgba(15,191,152,.5); color:#b8f7e2; }
-  #attract #quiz .qopt.wrong { background:rgba(255,93,108,.20); border-color:rgba(255,93,108,.5); color:#ffd0d6; }
-  #attract #quiz .qfact { color:rgba(255,255,255,.55); }
+  /* Quiz — sky */
+  .card-quiz { background:linear-gradient(135deg, #e0f0ff, #c8dfff 75%); color:#0c2966; }
+  .card-quiz .qq { font-weight:600; font-size:clamp(15px,1.7vw,18px); margin:8px 0 10px; line-height:1.35; color:#0c2966; }
+  .card-quiz .qopts { display:flex; flex-direction:column; gap:8px; }
+  .card-quiz .qopt { text-align:left; padding:clamp(10px,1.2vw,13px) clamp(14px,1.5vw,18px); border-radius:14px;
+    background:#fff; border:1px solid rgba(37,99,235,.18); color:#0c2966;
+    font-size:clamp(14px,1.6vw,16px); font-weight:500; cursor:pointer; transition:all .15s; font-family:'Poppins',sans-serif; }
+  .card-quiz .qopt:hover { background:#f0f7ff; }
+  .card-quiz .qopt.correct { background:#c8f3dc; border-color:#0a8f73; color:#053f30; }
+  .card-quiz .qopt.wrong { background:#ffd0d6; border-color:#be185d; color:#6b1234; }
+  .card-quiz .qfact { margin-top:10px; font-size:clamp(13px,1.4vw,15px); color:#1e3a8a; opacity:.75; min-height:1.2em; line-height:1.4; }
 
-  /* Selfie square on dark */
-  #self { border:1px solid rgba(255,255,255,.20);
-    box-shadow:0 0 0 4px rgba(15,191,152,.18), 0 28px 70px rgba(0,0,0,.55); }
-  /* Brand chip — dark glass */
-  #brand { background:rgba(255,255,255,.06); color:hsl(40,6%,95%); }
-  #brand small { color:rgba(255,255,255,.6); }
+  /* Did you know? — peach */
+  .card-fact { background:linear-gradient(135deg, #fff2dc, #ffd8a0 75%); color:#5a2e0a; justify-content:flex-start; }
+  .card-fact .dyklabel { font-size:12px; letter-spacing:.18em; text-transform:uppercase; font-weight:700; opacity:.65; }
+  .card-fact .dykbig { font-size:clamp(17px,2vw,22px); font-weight:500; line-height:1.4; transition:opacity .35s; opacity:.92; margin-top:10px; }
 
-  /* Loading screen — dark to match the landing */
+  /* Need help? — rose */
+  .card-contact { background:linear-gradient(135deg, #ffe6ec, #ffc8d6 75%); color:#6b1234; }
+  .card-contact ul { list-style:none; padding:0; margin:10px 0 0; }
+  .card-contact li { font-size:clamp(14px,1.7vw,17px); margin:9px 0; line-height:1.4; display:flex; align-items:center; gap:10px; }
+  .card-contact li .num { display:inline-block; background:#fff; padding:5px 13px; border-radius:999px;
+    font-weight:700; color:#831843; font-family:'Poppins',sans-serif; font-size:clamp(13px,1.4vw,15px);
+    box-shadow:0 2px 8px rgba(190,24,93,.18); white-space:nowrap; }
+
+  /* Selfie square gets a clean white frame on the new bright theme */
+  #self { border:3px solid #fff; box-shadow:0 0 0 4px rgba(15,191,152,.22), 0 22px 50px rgba(20,30,60,.18); }
+  #brand { background:rgba(255,255,255,.85); color:#1a1a2e; }
+  #brand small { color:#6b7280; }
+
+  /* Loading screen — light pastel to match new landing */
   #connecting {
-    background:radial-gradient(ellipse at center, hsla(260,80%,8%,.96), hsl(260,87%,3%));
-    color:hsl(40,6%,95%);
+    background:radial-gradient(ellipse at center, #fffdf7, #f0f4ff);
+    color:#1a1a2e;
   }
-  #connecting #connmsg { color:hsl(40,6%,95%); }
-  #connecting #loadfact { color:rgba(255,255,255,.55); }
-  #connecting .dots i { background:#fff; opacity:.85; }
-  #connecting .loader .orb { border-color:rgba(255,255,255,.85); box-shadow:0 12px 34px rgba(15,191,152,.5); }
+  #connecting #connmsg { color:#1a1a2e; }
+  #connecting #loadfact { color:#4b5563; }
 
   /* ===== PORTRAIT kiosk (e.g. 1080x1920): avatar on top, chat below ===== */
   @media (orientation: portrait), (max-width:820px) {
@@ -414,29 +442,44 @@
     </div>
   </div>
 
-  <!-- animated landing -->
+  <!-- card landing -->
   <div id="attract" class="overlay">
-    <canvas id="net"></canvas>
-    <div id="bubbles"></div>
-    <div class="orbs"><span></span><span></span><span></span><span></span></div>
-    <div class="kicker">ZICTA · ZAMBIA ICT AUTHORITY</div>
-    <h1 id="attracttitle">Meet Jonah</h1>
-    <p id="attractsub">Step up and have a real conversation about ZICTA — SIM registration, online safety, the .zm domain and more.</p>
-    <div class="chips">
-      <span class="chip lg">“How do I register my SIM?”</span>
-      <span class="chip lg">“What is the .zm domain?”</span>
-      <span class="chip lg">“How do I report a scam?”</span>
-      <span class="chip lg">“What does ZICTA do?”</span>
-    </div>
-    <div class="cta-wrap">
-      <span class="ring"></span><span class="ring"></span><span class="ring"></span>
-      <button class="bigbtn lg" id="startbtn">Talk to Oni</button>
-    </div>
-    <div id="quiz" class="lg">
-      <div class="qhead">💡 While you wait — test your ICT know-how!</div>
-      <div class="qq" id="qq"></div>
-      <div class="qopts" id="qopts"></div>
-      <div class="qfact" id="qfact"></div>
+    <div class="page">
+      <header class="phead">
+        <div class="kicker">ZICTA · ZAMBIA ICT AUTHORITY</div>
+        <h1 id="attracttitle">Meet Oni</h1>
+        <p id="attractsub">Your AI host for ZICTA — ask about SIM registration, online safety, the .zm domain and more. Tap any card to get started.</p>
+      </header>
+      <div class="grid">
+        <article class="card card-oni" id="cardOni">
+          <h2>Talk to <span class="accent">Oni</span></h2>
+          <p>Have a real conversation with our AI host about ZICTA's services, how to lodge a complaint, and staying safe online.</p>
+          <button class="card-cta" id="startbtn">Tap to talk &nbsp;→</button>
+        </article>
+        <article class="card card-you">
+          <h3>Live · You</h3>
+          <p>A little hello from across the booth.</p>
+          <div id="selfslot"></div>
+        </article>
+        <article class="card card-quiz">
+          <h3>💡 Quick Quiz</h3>
+          <div class="qq" id="qq"></div>
+          <div class="qopts" id="qopts"></div>
+          <div class="qfact" id="qfact"></div>
+        </article>
+        <article class="card card-fact">
+          <div class="dyklabel">Did you know?</div>
+          <div class="dykbig" id="dykText">Dial *#06# to see your phone's IMEI — note it down in case it's lost.</div>
+        </article>
+        <article class="card card-contact">
+          <h3>Need help?</h3>
+          <ul>
+            <li><span class="num">7070</span> ZICTA toll-free</li>
+            <li><span class="num">991</span> Police emergency</li>
+            <li><span class="num">zicta.zm</span> Web & complaints</li>
+          </ul>
+        </article>
+      </div>
     </div>
   </div>
   <div id="connecting" class="overlay hidden">
@@ -701,7 +744,7 @@ async function startCamera(){
     return true;
   } catch(e){ console.warn("camera unavailable:", e); el("selfiebtn").textContent = "📷 Enable camera"; return false; }
 }
-function dockSelf(){ if (camStream) el("self").classList.add("docked"); }
+function dockSelf(){ if (!camStream) return; el("self").style.cssText = ""; el("self").classList.add("docked"); }
 function stopCamera(){
   try { camStream && camStream.getTracks().forEach(t=>t.stop()); } catch {}
   camStream = null; try { el("selfview").srcObject = null; } catch {}
@@ -735,13 +778,32 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
       await startCamera();                          // request camera (gesture)
     }
   });
-  // tap an example question to jump straight into talking
-  document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", startEverything));
-  startNet();
-  spawnBubbles();                                   // ambient motion to fill the white space
-  renderQuiz();                                     // interactive quiz (portrait kiosk)
-  startCamera();                                    // auto-show the live "you" square on the landing
-  console.log("ZICTA build: dark liquid-glass landing + serif italic 'Oni' v10");
+  // Tap the Oni hero card anywhere to start
+  const cardOni = el("cardOni"); if (cardOni) cardOni.addEventListener("click", startEverything);
+  // Pin the live self-view inside the "Live · You" card slot (and on resize)
+  function positionSelfToSlot(){
+    const slot = el("selfslot"), s = el("self");
+    if (!slot || !s || s.classList.contains("docked")) return;
+    const r = slot.getBoundingClientRect();
+    if (!r.width) return;
+    Object.assign(s.style, { position:"fixed", left:r.left+"px", top:r.top+"px",
+      width:r.width+"px", height:r.height+"px", transform:"none", borderRadius:"20px" });
+  }
+  window._positionSelfToSlot = positionSelfToSlot;        // expose for resetToAttract
+  addEventListener("resize", positionSelfToSlot);
+  // "Did you know?" rotator on the Fact tile
+  function startDyk(){
+    const e2 = el("dykText"); if (!e2) return;
+    let i = Math.floor(Math.random()*FACTS.length);
+    e2.textContent = FACTS[i];
+    setInterval(()=>{ i=(i+1)%FACTS.length; e2.style.opacity=0;
+      setTimeout(()=>{ e2.textContent = FACTS[i]; e2.style.opacity=.92; }, 350); }, 6500);
+  }
+  renderQuiz();
+  startDyk();
+  startCamera();
+  requestAnimationFrame(() => requestAnimationFrame(positionSelfToSlot));
+  console.log("ZICTA build: clean iOS card landing (5 tiles) v11");
 })();
 
 // ---------- session ----------
@@ -832,7 +894,9 @@ function resetToAttract(){
   livecap.classList.remove("show"); livecap.textContent="";
   session=null; ending=false; setFoot("Ready");
   el("self").classList.remove("docked");
-  show("attract"); if(net) net.resume(); startCamera();   // bring the live circle back for the next visitor
+  el("self").style.cssText = "";
+  show("attract"); startCamera();
+  if (window._positionSelfToSlot) requestAnimationFrame(() => requestAnimationFrame(window._positionSelfToSlot));
 }
 function saveTranscript(){
   if (!transcript.length) return;
