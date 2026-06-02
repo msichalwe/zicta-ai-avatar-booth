@@ -270,20 +270,28 @@
     -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
 
-  /* Pastel hue background for the landing */
+  /* Pastel hue background for the landing — slowly cycles colours via hue-rotate */
   #attract {
+    background:none;
+    animation:none;
+    color:#1a1a2e;
+    justify-content:flex-start; align-items:stretch;
+    padding:clamp(20px, 3vw, 44px);
+    overflow-y:auto;
+    position:relative;
+  }
+  #attract::before {
+    content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
     background:
       radial-gradient(900px 700px at 0%   0%,   #ffe6f3, transparent 62%),
       radial-gradient(900px 700px at 100% 0%,   #e0f0ff, transparent 62%),
       radial-gradient(900px 700px at 50%  100%, #e6fff5, transparent 62%),
       radial-gradient(900px 700px at 100% 60%,  #fff2dc, transparent 62%),
       #f6f8fc;
-    animation:none;
-    color:#1a1a2e;
-    justify-content:flex-start; align-items:stretch;
-    padding:clamp(20px, 3vw, 44px);
-    overflow-y:auto;
+    animation:huecycle 38s linear infinite;
   }
+  #attract > * { position:relative; z-index:1; }   /* cards above the cycling bg, unaffected by its hue-rotate */
+  @keyframes huecycle { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
 
   .page { width:100%; max-width:1100px; margin:0 auto; display:flex; flex-direction:column; gap:clamp(20px,2.6vw,32px); }
   .phead { text-align:center; }
@@ -323,10 +331,10 @@
     box-shadow:0 12px 28px rgba(10,143,115,.35); transition:transform .12s, box-shadow .25s; }
   .card-cta:hover { transform:translateY(-1px); }
 
-  /* Live · You — lavender, holds the webcam slot */
-  .card-you { background:linear-gradient(135deg, #f3edff, #e2d5ff 75%); color:#2a1654; }
-  #selfslot { position:relative; width:100%; aspect-ratio:4/3; border-radius:20px; overflow:hidden;
-    background:#1a1a2e; margin-top:6px; }
+  /* Live · You — FULL-BLEED webcam (the card IS the video) */
+  .card-you { padding:0; background:#0a1626; aspect-ratio:4/3; overflow:hidden; }
+  #selfslot { position:relative; width:100%; height:100%; border-radius:inherit; overflow:hidden;
+    background:#0a1626; margin:0; }
 
   /* Quiz — sky */
   .card-quiz { background:linear-gradient(135deg, #e0f0ff, #c8dfff 75%); color:#0c2966; }
@@ -452,13 +460,11 @@
       </header>
       <div class="grid">
         <article class="card card-oni" id="cardOni">
-          <h2>Talk to <span class="accent">Oni</span></h2>
+          <h2 id="cardonititle">Talk to <span class="accent">Zictabot</span></h2>
           <p>Have a real conversation with our AI host about ZICTA's services, how to lodge a complaint, and staying safe online.</p>
           <button class="card-cta" id="startbtn">Tap to talk &nbsp;→</button>
         </article>
         <article class="card card-you">
-          <h3>Live · You</h3>
-          <p>A little hello from across the booth.</p>
           <div id="selfslot"></div>
         </article>
         <article class="card card-quiz">
@@ -759,6 +765,7 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
   el("pname").textContent = name; el("pinitial").textContent = name.charAt(0).toUpperCase();
   el("brandsub").textContent = "with " + name;
   el("attracttitle").innerHTML = 'Meet <span class="accent">' + name + '</span>';
+  const cot = el("cardonititle"); if (cot) cot.innerHTML = 'Talk to <span class="accent">' + name + '</span>';
   ptt = !!cfg.liveavatarPushToTalk;
   if (!cfg.hasLiveAvatar){
     el("attract").innerHTML = '<div class="kicker">ZICTA AI</div><h1>Add a LiveAvatar key</h1><p>Get one at <a href="https://app.liveavatar.com/developers" target="_blank">app.liveavatar.com/developers</a>, set <code>liveavatarApiKey</code> in <code>config.json</code>, restart, refresh.<br><br>Free 3D version: <a href="/avatar3d.html">/avatar3d.html</a></p>';
@@ -787,7 +794,7 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
     const r = slot.getBoundingClientRect();
     if (!r.width) return;
     Object.assign(s.style, { position:"fixed", left:r.left+"px", top:r.top+"px",
-      width:r.width+"px", height:r.height+"px", transform:"none", borderRadius:"20px" });
+      width:r.width+"px", height:r.height+"px", transform:"none", borderRadius:"28px" });
   }
   window._positionSelfToSlot = positionSelfToSlot;        // expose for resetToAttract
   addEventListener("resize", positionSelfToSlot);
@@ -803,7 +810,7 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
   startDyk();
   startCamera();
   requestAnimationFrame(() => requestAnimationFrame(positionSelfToSlot));
-  console.log("ZICTA build: clean iOS card landing (5 tiles) v11");
+  console.log("ZICTA build: Zictabot + full-bleed cam + hue-cycle bg v12");
 })();
 
 // ---------- session ----------
