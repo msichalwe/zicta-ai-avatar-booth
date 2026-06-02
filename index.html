@@ -271,25 +271,25 @@
     -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
 
   /* Pastel hue background for the landing — slowly cycles colours via hue-rotate */
-  /* Light TV-interface — matte color tiles on a soft hue-shifting pastel backdrop */
+  /* Light TV-interface — bright matte color tiles on a vivid hue-shifting pastel backdrop */
   #attract {
-    background:#f5f3ef;
+    background:#f9f6f1;
     animation:none;
     color:#1f2330;
     justify-content:stretch; align-items:stretch;
     padding:clamp(14px, 1.4vw, 24px);
     overflow:hidden;
   }
-  /* light, gently cycling pastel wash */
+  /* brighter, more saturated cycling wash */
   #attract::before {
     content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
     background:
-      radial-gradient(900px 800px at 0%   0%,   #fde0ea, transparent 62%),
-      radial-gradient(900px 800px at 100% 0%,   #dde7f6, transparent 62%),
-      radial-gradient(900px 800px at 50%  100%, #e2f0e5, transparent 62%),
-      radial-gradient(900px 800px at 100% 60%,  #f8e6c8, transparent 62%),
-      radial-gradient(700px 600px at 0%   60%,  #e8dcf0, transparent 62%),
-      #f5f3ef;
+      radial-gradient(1100px 900px at 0%   0%,   #ffb1d1, transparent 60%),
+      radial-gradient(1100px 900px at 100% 0%,   #9ec5ff, transparent 60%),
+      radial-gradient(1100px 900px at 50%  100%, #99e7c0, transparent 60%),
+      radial-gradient(1100px 900px at 100% 60%,  #ffd486, transparent 60%),
+      radial-gradient(900px 700px at 0%   60%,   #c5a8ff, transparent 60%),
+      #f9f6f1;
     animation:huecycle 42s linear infinite;
   }
   #attract > * { position:relative; z-index:1; }
@@ -324,44 +324,43 @@
   .card p  { font-size:clamp(14px, 1.5vw, 20px); line-height:1.5; color:rgba(255,255,255,.78); margin:0; }
   .card-label { font-size:clamp(11px,1vw,13px); letter-spacing:.24em; text-transform:uppercase; font-weight:700; color:rgba(255,255,255,.6); margin-bottom:8px; }
 
-  /* HERO — Talk to Zictabot — matte sage */
+  /* HERO — Talk to ZICTABOT — bright emerald, clean uppercase */
   .card-oni { grid-column:1 / -1; grid-row:1; cursor:pointer;
-    background:#4d8576;                              /* matte sage */
+    background:#10b981;                              /* bright emerald */
     justify-content:space-between; }
-  .card-oni h2 { font-size:clamp(42px, 5.6vw, 96px); color:#fff; }
-  .card-oni h2 .accent {
-    font-family:'Source Serif 4', Georgia, serif; font-style:italic; font-weight:500;
-    color:#e7f0ec;
-    -webkit-background-clip:initial; background-clip:initial; -webkit-text-fill-color:#e7f0ec; background:none;
+  .card-oni h2 { font-size:clamp(42px, 5.6vw, 96px); color:#fff;
+    font-family:'Poppins',sans-serif; font-weight:700; letter-spacing:-.02em;
+    text-transform:uppercase; }
+  .card-oni h2 .accent {                              /* keep readable inside uppercase */
+    font-family:'Poppins',sans-serif; font-style:normal; font-weight:700;
+    color:#fff; background:none; -webkit-background-clip:initial; -webkit-text-fill-color:#fff;
   }
-  .card-oni p { color:rgba(255,255,255,.82); max-width:780px; }
+  .card-oni p { color:rgba(255,255,255,.85); max-width:780px; }
   .card-cta { align-self:flex-start; margin-top:auto;
     padding:clamp(14px,1.6vw,22px) clamp(28px,3vw,48px); border-radius:999px;
-    background:#fff; color:#2c5246; border:none; cursor:pointer;
+    background:#fff; color:#065f46; border:none; cursor:pointer;
     font-family:'Poppins',sans-serif; font-weight:700; font-size:clamp(16px,1.8vw,22px);
     transition:transform .12s, background .2s; }
   .card-cta:hover { transform:translateY(-1px); background:#fafafa; }
 
-  /* TIME — matte lavender */
-  .card-time { grid-column:1; grid-row:2; background:#766b92; justify-content:center; align-items:flex-start; }
+  /* TIME — bright violet */
+  .card-time { grid-column:1; grid-row:2; background:#8b5cf6; justify-content:center; align-items:flex-start; }
   .time-big { font-family:'Poppins',sans-serif; font-weight:500; font-size:clamp(56px, 6.8vw, 130px);
     letter-spacing:-.04em; line-height:1; color:#fff; font-variant-numeric:tabular-nums; }
-  .time-date { font-size:clamp(14px,1.5vw,20px); color:rgba(255,255,255,.72); margin-top:10px; font-weight:500; }
+  .time-date { font-size:clamp(14px,1.5vw,20px); color:rgba(255,255,255,.78); margin-top:10px; font-weight:500; }
 
-  /* WEATHER — matte slate blue */
-  .card-weather { grid-column:2; grid-row:2; background:#5a7aa0; justify-content:center; align-items:flex-start; }
-  .weather-row { display:flex; align-items:center; gap:clamp(14px,1.8vw,28px); }
-  .weather-icon { font-size:clamp(48px, 6vw, 108px); line-height:1; }
+  /* WEATHER — bright blue (no emoji) */
+  .card-weather { grid-column:2; grid-row:2; background:#3b82f6; justify-content:center; align-items:flex-start; }
   .weather-temp { font-family:'Poppins',sans-serif; font-weight:500; font-size:clamp(56px, 6.8vw, 130px);
     letter-spacing:-.04em; line-height:1; color:#fff; font-variant-numeric:tabular-nums; }
-  .weather-sub { font-size:clamp(14px,1.5vw,20px); color:rgba(255,255,255,.72); margin-top:10px; font-weight:500; }
+  .weather-sub { font-size:clamp(14px,1.5vw,20px); color:rgba(255,255,255,.78); margin-top:10px; font-weight:500; }
 
   /* LIVE · YOU — full-bleed black, the webcam IS the card */
-  .card-you { grid-column:1; grid-row:3; padding:0; background:#1a1a20; overflow:hidden; }
-  #selfslot { position:relative; width:100%; height:100%; border-radius:inherit; overflow:hidden; background:#1a1a20; margin:0; }
+  .card-you { grid-column:1; grid-row:3; padding:0; background:#18181b; overflow:hidden; }
+  #selfslot { position:relative; width:100%; height:100%; border-radius:inherit; overflow:hidden; background:#18181b; margin:0; }
 
-  /* QUIZ — matte indigo */
-  .card-quiz { grid-column:2; grid-row:3; background:#525a99; }
+  /* QUIZ — vibrant indigo */
+  .card-quiz { grid-column:2; grid-row:3; background:#6366f1; }
   .card-quiz .qq { font-weight:600; font-size:clamp(16px,1.8vw,24px); margin:6px 0 14px; line-height:1.35; color:#fff; }
   .card-quiz .qopts { display:flex; flex-direction:column; gap:clamp(8px,1vw,12px); }
   .card-quiz .qopt { text-align:left; padding:clamp(11px,1.3vw,17px) clamp(16px,1.6vw,22px);
@@ -373,18 +372,18 @@
   .card-quiz .qopt.wrong { background:rgba(253,164,175,.30); color:#fff; border-color:rgba(253,164,175,.6); }
   .card-quiz .qfact { margin-top:12px; font-size:clamp(12px,1.3vw,16px); color:rgba(255,255,255,.7); min-height:1.2em; line-height:1.4; }
 
-  /* DID YOU KNOW — matte terracotta */
-  .card-fact { grid-column:1; grid-row:4; background:#b07452; justify-content:flex-start; }
-  .card-fact .dyklabel { color:rgba(255,255,255,.72); }
-  .card-fact .dykbig { font-size:clamp(18px,2.1vw,28px); font-weight:500; line-height:1.4; transition:opacity .35s; opacity:.95; margin-top:14px; color:#fff; }
+  /* DID YOU KNOW — bright orange */
+  .card-fact { grid-column:1; grid-row:4; background:#f97316; justify-content:flex-start; }
+  .card-fact .dyklabel { color:rgba(255,255,255,.85); }
+  .card-fact .dykbig { font-size:clamp(18px,2.1vw,28px); font-weight:500; line-height:1.4; transition:opacity .35s; opacity:.96; margin-top:14px; color:#fff; }
 
-  /* NEED HELP — matte dusty rose */
-  .card-contact { grid-column:2; grid-row:4; background:#a25e7a; }
+  /* NEED HELP — vibrant pink */
+  .card-contact { grid-column:2; grid-row:4; background:#ec4899; }
   .card-contact h3 { color:#fff; }
   .card-contact ul { list-style:none; padding:0; margin:14px 0 0; display:flex; flex-direction:column; gap:clamp(8px,1vw,14px); }
   .card-contact li { font-size:clamp(13px,1.6vw,20px); line-height:1.3; display:flex; align-items:center; gap:14px; color:rgba(255,255,255,.92); font-weight:500; }
   .card-contact li .num { display:inline-block; background:#fff; padding:clamp(5px,.6vw,8px) clamp(12px,1.3vw,18px);
-    border-radius:999px; font-weight:700; color:#7a3f55; font-family:'Poppins',sans-serif;
+    border-radius:999px; font-weight:700; color:#9d174d; font-family:'Poppins',sans-serif;
     font-size:clamp(14px,1.5vw,20px); white-space:nowrap; letter-spacing:.02em; }
 
   /* Selfie square gets a clean white frame on the new bright theme */
@@ -454,7 +453,7 @@
     <span class="livebadge">● LIVE</span>
     <span class="tag">You</span>
     <div class="flash" id="flash"></div>
-    <button class="selfiebtn" id="selfiebtn">📷 Take a selfie</button>
+    <button class="selfiebtn" id="selfiebtn">Take a selfie</button>
     <div id="waves"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   </div>
   <div id="stage">
@@ -486,7 +485,7 @@
       </header>
       <div class="grid">
         <article class="card card-oni" id="cardOni">
-          <h2 id="cardonititle">Talk to <span class="accent">Zictabot</span></h2>
+          <h2 id="cardonititle">TALK TO ZICTABOT</h2>
           <p>Have a real conversation with our AI host about ZICTA's services, how to lodge a complaint, and staying safe online.</p>
           <button class="card-cta" id="startbtn">Tap to talk &nbsp;→</button>
         </article>
@@ -497,14 +496,14 @@
         </article>
         <article class="card card-weather">
           <div class="card-label">Weather</div>
-          <div class="weather-row"><span class="weather-icon">☀️</span><span class="weather-temp">26°</span></div>
+          <div class="weather-temp">26°</div>
           <div class="weather-sub">Sunny · Lusaka</div>
         </article>
         <article class="card card-you">
           <div id="selfslot"></div>
         </article>
         <article class="card card-quiz">
-          <h3>💡 Quick Quiz</h3>
+          <div class="card-label">Quick Quiz</div>
           <div class="qq" id="qq"></div>
           <div class="qopts" id="qopts"></div>
           <div class="qfact" id="qfact"></div>
@@ -782,9 +781,9 @@ async function startCamera(){
     camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:"user", width:{ideal:640}, height:{ideal:480}, frameRate:{ideal:24} }, audio:false });
     el("selfview").srcObject = camStream;
     el("self").classList.add("cam");                // shows live video, hides the Oni fallback
-    el("selfiebtn").textContent = "📷 Take a selfie";
+    el("selfiebtn").textContent = "Take a selfie";
     return true;
-  } catch(e){ console.warn("camera unavailable:", e); el("selfiebtn").textContent = "📷 Enable camera"; return false; }
+  } catch(e){ console.warn("camera unavailable:", e); el("selfiebtn").textContent = "Enable camera"; return false; }
 }
 function dockSelf(){ if (!camStream) return; el("self").style.cssText = ""; el("self").classList.add("docked"); }
 function stopCamera(){
@@ -800,8 +799,9 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
   const name = cfg.agentName || "Jonah";
   el("pname").textContent = name; el("pinitial").textContent = name.charAt(0).toUpperCase();
   el("brandsub").textContent = "with " + name;
-  el("attracttitle").innerHTML = 'Meet <span class="accent">' + name + '</span>';
-  const cot = el("cardonititle"); if (cot) cot.innerHTML = 'Talk to <span class="accent">' + name + '</span>';
+  const upper = (name || "Zictabot").toUpperCase();
+  el("attracttitle").textContent = "MEET " + upper;
+  const cot = el("cardonititle"); if (cot) cot.textContent = "TALK TO " + upper;
   ptt = !!cfg.liveavatarPushToTalk;
   if (!cfg.hasLiveAvatar){
     el("attract").innerHTML = '<div class="kicker">ZICTA AI</div><h1>Add a LiveAvatar key</h1><p>Get one at <a href="https://app.liveavatar.com/developers" target="_blank">app.liveavatar.com/developers</a>, set <code>liveavatarApiKey</code> in <code>config.json</code>, restart, refresh.<br><br>Free 3D version: <a href="/avatar3d.html">/avatar3d.html</a></p>';
@@ -857,7 +857,7 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
   tickClock(); setInterval(tickClock, 1000);
   startCamera();
   requestAnimationFrame(() => requestAnimationFrame(positionSelfToSlot));
-  console.log("ZICTA build: matte color tiles on light hue background v16");
+  console.log("ZICTA build: bright tiles + uppercase ZICTABOT + no emojis v17");
 })();
 
 // ---------- session ----------
