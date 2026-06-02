@@ -271,24 +271,25 @@
     -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
 
   /* Pastel hue background for the landing — slowly cycles colours via hue-rotate */
-  /* full-screen, edge-to-edge — DON'T override .overlay's position:fixed */
+  /* TV-interface inspired full-screen layout (frosted glass cards on hue-shifting backdrop) */
   #attract {
     background:none;
     animation:none;
     color:#1a1a2e;
     justify-content:stretch; align-items:stretch;
-    padding:clamp(10px, 1.2vw, 18px);
+    padding:clamp(10px, 1.2vw, 20px);
     overflow:hidden;
   }
-  /* Cycling hue background layer (cards above are unaffected by its hue-rotate filter) */
+  /* Bolder cycling background — strong enough to show through frosted glass cards */
   #attract::before {
     content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
     background:
-      radial-gradient(900px 700px at 0%   0%,   #ffe6f3, transparent 62%),
-      radial-gradient(900px 700px at 100% 0%,   #e0f0ff, transparent 62%),
-      radial-gradient(900px 700px at 50%  100%, #e6fff5, transparent 62%),
-      radial-gradient(900px 700px at 100% 60%,  #fff2dc, transparent 62%),
-      #f6f8fc;
+      radial-gradient(900px 800px at 0%   0%,   #ffc9e2, transparent 60%),
+      radial-gradient(900px 800px at 100% 0%,   #b9d6ff, transparent 60%),
+      radial-gradient(900px 800px at 50%  100%, #b6f4d4, transparent 60%),
+      radial-gradient(900px 800px at 100% 60%,  #ffe1a8, transparent 60%),
+      radial-gradient(700px 600px at 0% 60%,    #d4c5ff, transparent 60%),
+      #eef2f7;
     animation:huecycle 38s linear infinite;
   }
   #attract > * { position:relative; z-index:1; }
@@ -296,90 +297,126 @@
 
   .page { width:100%; height:100%; max-width:1800px; margin:0 auto;
     display:flex; flex-direction:column; flex:1; min-height:0; }
-  .phead { display:none; }                          /* hero card carries the headline now */
+  .phead { display:none; }
 
-  /* Card grid — fills the whole viewport in 2 cols × 3 rows (hero spans row 1) */
+  /* 2 cols × 4 rows — hero (full width) + 6 widget tiles */
   .grid {
     display:grid;
     grid-template-columns:repeat(2, 1fr);
-    grid-template-rows:1.4fr 1fr 1fr;
-    gap:clamp(10px, 1.2vw, 18px);
+    grid-template-rows:1.5fr 1fr 1.3fr 1fr;
+    gap:clamp(10px, 1.1vw, 18px);
     flex:1; min-height:0; height:100%; width:100%;
   }
-  .card { position:relative; border-radius:clamp(20px,1.6vw,32px);
-    padding:clamp(18px, 2vw, 36px);
-    box-shadow:0 18px 50px rgba(20,30,60,.14), 0 2px 6px rgba(20,30,60,.04);
-    overflow:hidden; transition:transform .25s ease, box-shadow .25s ease;
-    display:flex; flex-direction:column; gap:8px; }
-  .card h2, .card h3 { font-family:'Poppins',sans-serif; font-weight:600; margin:0; line-height:1.08; letter-spacing:-.01em; }
-  .card h2 { font-size:clamp(32px, 4vw, 64px); }
-  .card h3 { font-size:clamp(20px, 2.2vw, 30px); }
-  .card p  { font-size:clamp(14px, 1.5vw, 19px); line-height:1.5; opacity:.92; margin:0; }
-  .card:active { transform:scale(.992); }
 
-  /* HERO — Talk to Zictabot (spans both cols, top row, biggest) */
+  /* Frosted-glass card base */
+  .card { position:relative; border-radius:clamp(22px,1.8vw,34px);
+    padding:clamp(18px, 2vw, 36px);
+    background:rgba(255,255,255,.22);
+    backdrop-filter:blur(18px) saturate(160%);
+    -webkit-backdrop-filter:blur(18px) saturate(160%);
+    border:1px solid rgba(255,255,255,.4);
+    box-shadow:0 10px 30px rgba(20,30,60,.10), inset 0 1px 0 rgba(255,255,255,.5);
+    overflow:hidden;
+    transition:transform .25s ease, box-shadow .25s ease;
+    display:flex; flex-direction:column; gap:6px;
+    color:#1a1a2e;
+  }
+  .card h2, .card h3 { font-family:'Poppins',sans-serif; font-weight:600; margin:0; line-height:1.08; letter-spacing:-.01em; color:#1a1a2e; }
+  .card h2 { font-size:clamp(32px, 4vw, 64px); }
+  .card h3 { font-size:clamp(18px, 2vw, 28px); }
+  .card p  { font-size:clamp(14px, 1.5vw, 19px); line-height:1.5; opacity:.85; margin:0; }
+  .card:active { transform:scale(.992); }
+  .card-label { font-size:clamp(11px,1vw,13px); letter-spacing:.22em; text-transform:uppercase; font-weight:700; color:rgba(26,26,46,.55); margin-bottom:6px; }
+
+  /* HERO — Talk to Zictabot (spans both cols, row 1) — slightly tinted glass + decorative blob */
   .card-oni {
     grid-column:1 / -1; grid-row:1; cursor:pointer;
-    background:linear-gradient(135deg, #18c29c 0%, #0a8f73 65%, #06664e 100%);
-    color:#fff; justify-content:space-between;
+    background:linear-gradient(135deg, rgba(24,194,156,.30), rgba(99,102,241,.18));
+    justify-content:space-between;
   }
-  .card-oni h2 { color:#fff; font-size:clamp(40px, 5.4vw, 84px); }
+  .card-oni::after {
+    content:""; position:absolute; right:-80px; top:-100px; width:380px; height:380px;
+    background:radial-gradient(circle, rgba(255,255,255,.45), transparent 70%); pointer-events:none;
+  }
+  .card-oni h2 { font-size:clamp(42px, 5.4vw, 88px); color:#0a2c24; position:relative; z-index:1; }
   .card-oni h2 .accent {
     font-family:'Source Serif 4', Georgia, serif; font-style:italic; font-weight:500;
-    background:linear-gradient(120deg, #ffffff, #c8f3dc 60%, #fcd34d);
+    background:linear-gradient(120deg, #0a8f73, #1f4fd0, #be185d);
     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
   }
-  .card-oni p { color:rgba(255,255,255,.92); max-width:760px; }
-  .card-cta { align-self:flex-start; margin-top:auto;
+  .card-oni p { color:rgba(10,44,36,.78); max-width:760px; position:relative; z-index:1; }
+  .card-cta { align-self:flex-start; margin-top:auto; position:relative; z-index:1;
     padding:clamp(14px,1.6vw,20px) clamp(28px,3vw,48px); border-radius:999px;
-    background:#ffffff; color:#053f30; border:none; cursor:pointer;
+    background:#0a8f73; color:#fff; border:none; cursor:pointer;
     font-family:'Poppins',sans-serif; font-weight:700; font-size:clamp(16px,1.8vw,22px);
-    box-shadow:0 12px 28px rgba(0,0,0,.18); transition:transform .12s; }
+    box-shadow:0 12px 28px rgba(10,143,115,.40); transition:transform .12s; }
   .card-cta:hover { transform:translateY(-1px); }
 
-  /* LIVE · YOU — full-bleed dark webcam tile (col 1, row 2) */
-  .card-you { grid-column:1; grid-row:2; padding:0; background:#0a1626; overflow:hidden; }
-  #selfslot { position:relative; width:100%; height:100%; border-radius:inherit; overflow:hidden;
-    background:#0a1626; margin:0; }
+  /* TIME — col 1 row 2 */
+  .card-time {
+    grid-column:1; grid-row:2;
+    background:linear-gradient(135deg, rgba(167,139,250,.30), rgba(99,102,241,.18));
+    justify-content:center; align-items:flex-start;
+  }
+  .time-big { font-family:'Poppins',sans-serif; font-weight:600; font-size:clamp(52px, 6vw, 110px);
+    letter-spacing:-.03em; line-height:1; color:#1e1b4b; font-variant-numeric:tabular-nums; }
+  .time-date { font-size:clamp(14px,1.5vw,20px); color:rgba(30,27,75,.7); margin-top:6px; font-weight:500; }
 
-  /* QUIZ — saturated blue (col 2, row 2) */
-  .card-quiz {
+  /* WEATHER — col 2 row 2 */
+  .card-weather {
     grid-column:2; grid-row:2;
-    background:linear-gradient(135deg, #4f6ff5 0%, #2645d9 70%, #1e3aa8 100%);
-    color:#fff;
+    background:linear-gradient(135deg, rgba(96,165,250,.30), rgba(59,130,246,.18));
+    justify-content:center; align-items:flex-start;
   }
-  .card-quiz h3 { color:#fff; }
-  .card-quiz .qq { font-weight:600; font-size:clamp(16px,1.8vw,22px); margin:6px 0 10px; line-height:1.35; color:#fff; }
-  .card-quiz .qopts { display:flex; flex-direction:column; gap:clamp(7px,.9vw,12px); }
-  .card-quiz .qopt { text-align:left; padding:clamp(11px,1.3vw,16px) clamp(16px,1.6vw,22px);
-    border-radius:14px; background:rgba(255,255,255,.96); border:none; color:#0c2966;
-    font-size:clamp(14px,1.6vw,18px); font-weight:500; cursor:pointer; transition:transform .12s, background .15s; font-family:'Poppins',sans-serif; }
-  .card-quiz .qopt:hover { background:#fff; }
-  .card-quiz .qopt.correct { background:#c8f3dc; color:#053f30; }
-  .card-quiz .qopt.wrong { background:#ffd0d6; color:#6b1234; }
-  .card-quiz .qfact { margin-top:10px; font-size:clamp(13px,1.4vw,16px); color:rgba(255,255,255,.85); min-height:1.2em; line-height:1.4; }
+  .weather-row { display:flex; align-items:center; gap:clamp(14px,1.6vw,22px); }
+  .weather-icon { font-size:clamp(48px, 5.5vw, 96px); line-height:1; }
+  .weather-temp { font-family:'Poppins',sans-serif; font-weight:600; font-size:clamp(52px, 6vw, 110px);
+    letter-spacing:-.03em; line-height:1; color:#0c2966; font-variant-numeric:tabular-nums; }
+  .weather-sub { font-size:clamp(14px,1.5vw,20px); color:rgba(12,41,102,.7); margin-top:6px; font-weight:500; }
 
-  /* DID YOU KNOW — warm amber (col 1, row 3) */
-  .card-fact {
-    grid-column:1; grid-row:3;
-    background:linear-gradient(135deg, #f59e0b 0%, #d97706 70%, #b45309 100%);
-    color:#fff; justify-content:flex-start;
-  }
-  .card-fact .dyklabel { font-size:clamp(12px,1.2vw,14px); letter-spacing:.18em; text-transform:uppercase; font-weight:700; opacity:.85; color:#fff; }
-  .card-fact .dykbig { font-size:clamp(18px,2.2vw,28px); font-weight:500; line-height:1.4; transition:opacity .35s; opacity:.96; margin-top:14px; color:#fff; }
+  /* LIVE · YOU — full-bleed (col 1 row 3) */
+  .card-you { grid-column:1; grid-row:3; padding:0; background:rgba(10,22,38,.4);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); overflow:hidden; }
+  #selfslot { position:relative; width:100%; height:100%; border-radius:inherit; overflow:hidden;
+    background:transparent; margin:0; }
 
-  /* NEED HELP — rose/red (col 2, row 3) */
-  .card-contact {
+  /* QUIZ — col 2 row 3, glass with subtle tint */
+  .card-quiz {
     grid-column:2; grid-row:3;
-    background:linear-gradient(135deg, #f43f5e 0%, #be185d 70%, #9f1239 100%);
-    color:#fff;
+    background:linear-gradient(135deg, rgba(99,102,241,.25), rgba(79,70,229,.15));
   }
-  .card-contact h3 { color:#fff; }
-  .card-contact ul { list-style:none; padding:0; margin:14px 0 0; display:flex; flex-direction:column; gap:clamp(8px,1vw,14px); }
-  .card-contact li { font-size:clamp(15px,1.8vw,22px); line-height:1.4; display:flex; align-items:center; gap:14px; color:rgba(255,255,255,.95); font-weight:500; }
-  .card-contact li .num { display:inline-block; background:#fff; padding:clamp(5px,.6vw,8px) clamp(12px,1.4vw,18px);
+  .card-quiz .qq { font-weight:600; font-size:clamp(15px,1.7vw,22px); margin:6px 0 10px; line-height:1.35; color:#1a1a2e; }
+  .card-quiz .qopts { display:flex; flex-direction:column; gap:clamp(7px,.9vw,12px); }
+  .card-quiz .qopt { text-align:left; padding:clamp(10px,1.2vw,16px) clamp(15px,1.5vw,22px);
+    border-radius:14px; background:rgba(255,255,255,.65); border:1px solid rgba(255,255,255,.6); color:#1e1b4b;
+    font-size:clamp(13px,1.5vw,18px); font-weight:500; cursor:pointer; transition:transform .12s, background .15s;
+    font-family:'Poppins',sans-serif; backdrop-filter:blur(4px); }
+  .card-quiz .qopt:hover { background:rgba(255,255,255,.85); }
+  .card-quiz .qopt.correct { background:rgba(200,243,220,.95); color:#053f30; border-color:rgba(10,143,115,.5); }
+  .card-quiz .qopt.wrong { background:rgba(255,208,214,.95); color:#6b1234; border-color:rgba(190,24,93,.5); }
+  .card-quiz .qfact { margin-top:10px; font-size:clamp(12px,1.3vw,16px); color:rgba(30,27,75,.65); min-height:1.2em; line-height:1.4; }
+
+  /* DID YOU KNOW — col 1 row 4 */
+  .card-fact {
+    grid-column:1; grid-row:4;
+    background:linear-gradient(135deg, rgba(251,191,36,.28), rgba(245,158,11,.16));
+    justify-content:flex-start;
+  }
+  .card-fact .dyklabel { font-size:clamp(11px,1.1vw,14px); letter-spacing:.22em; text-transform:uppercase; font-weight:700; color:rgba(90,46,10,.65); }
+  .card-fact .dykbig { font-size:clamp(16px,1.9vw,26px); font-weight:500; line-height:1.4; transition:opacity .35s; opacity:.95; margin-top:10px; color:#5a2e0a; }
+
+  /* NEED HELP — col 2 row 4 */
+  .card-contact {
+    grid-column:2; grid-row:4;
+    background:linear-gradient(135deg, rgba(244,114,182,.28), rgba(236,72,153,.16));
+  }
+  .card-contact h3 { color:#6b1234; }
+  .card-contact ul { list-style:none; padding:0; margin:10px 0 0; display:flex; flex-direction:column; gap:clamp(7px,.9vw,12px); }
+  .card-contact li { font-size:clamp(13px,1.6vw,20px); line-height:1.3; display:flex; align-items:center; gap:12px; color:#6b1234; font-weight:500; }
+  .card-contact li .num { display:inline-block; background:rgba(255,255,255,.85); padding:clamp(4px,.5vw,7px) clamp(11px,1.2vw,16px);
     border-radius:999px; font-weight:800; color:#831843; font-family:'Poppins',sans-serif;
-    font-size:clamp(14px,1.6vw,20px); box-shadow:0 2px 8px rgba(0,0,0,.12); white-space:nowrap; letter-spacing:.02em; }
+    font-size:clamp(13px,1.4vw,18px); box-shadow:0 2px 8px rgba(190,24,93,.18); white-space:nowrap; letter-spacing:.02em;
+    backdrop-filter:blur(4px); }
 
   /* Selfie square gets a clean white frame on the new bright theme */
   #self { border:3px solid #fff; box-shadow:0 0 0 4px rgba(15,191,152,.22), 0 22px 50px rgba(20,30,60,.18); }
@@ -483,6 +520,16 @@
           <h2 id="cardonititle">Talk to <span class="accent">Zictabot</span></h2>
           <p>Have a real conversation with our AI host about ZICTA's services, how to lodge a complaint, and staying safe online.</p>
           <button class="card-cta" id="startbtn">Tap to talk &nbsp;→</button>
+        </article>
+        <article class="card card-time">
+          <div class="card-label">Lusaka · Now</div>
+          <div class="time-big" id="clockHM">--:--</div>
+          <div class="time-date" id="clockDate">—</div>
+        </article>
+        <article class="card card-weather">
+          <div class="card-label">Weather</div>
+          <div class="weather-row"><span class="weather-icon">☀️</span><span class="weather-temp">26°</span></div>
+          <div class="weather-sub">Sunny · Lusaka</div>
         </article>
         <article class="card card-you">
           <div id="selfslot"></div>
@@ -830,9 +877,18 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
   }
   renderQuiz();
   startDyk();
+  // live clock for the Time tile (Lusaka local)
+  function tickClock(){
+    const hm = el("clockHM"), dt = el("clockDate"); if (!hm) return;
+    const d = new Date();
+    const opts = { timeZone:"Africa/Lusaka", hour:"2-digit", minute:"2-digit", hour12:false };
+    hm.textContent = new Intl.DateTimeFormat("en-GB", opts).format(d);
+    dt.textContent = new Intl.DateTimeFormat("en-GB", { timeZone:"Africa/Lusaka", weekday:"long", day:"2-digit", month:"long" }).format(d);
+  }
+  tickClock(); setInterval(tickClock, 1000);
   startCamera();
   requestAnimationFrame(() => requestAnimationFrame(positionSelfToSlot));
-  console.log("ZICTA build: full-screen Win8+iOS tiles (5 bold cards filling viewport) v13");
+  console.log("ZICTA build: TV-interface — frosted glass tiles + clock + weather v14");
 })();
 
 // ---------- session ----------
