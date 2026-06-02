@@ -271,26 +271,25 @@
     -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
 
   /* Pastel hue background for the landing — slowly cycles colours via hue-rotate */
-  /* TV-interface inspired full-screen layout (frosted glass cards on hue-shifting backdrop) */
+  /* Flat dark TV-interface — solid tiles on a subtle hue-shifting backdrop */
   #attract {
-    background:none;
+    background:#0b0f1a;
     animation:none;
-    color:#1a1a2e;
+    color:#e7e9ee;
     justify-content:stretch; align-items:stretch;
-    padding:clamp(10px, 1.2vw, 20px);
+    padding:clamp(14px, 1.4vw, 24px);
     overflow:hidden;
   }
-  /* Bolder cycling background — strong enough to show through frosted glass cards */
+  /* subtle, slow color wash behind the tiles (still hue-cycles, but muted) */
   #attract::before {
     content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
     background:
-      radial-gradient(900px 800px at 0%   0%,   #ffc9e2, transparent 60%),
-      radial-gradient(900px 800px at 100% 0%,   #b9d6ff, transparent 60%),
-      radial-gradient(900px 800px at 50%  100%, #b6f4d4, transparent 60%),
-      radial-gradient(900px 800px at 100% 60%,  #ffe1a8, transparent 60%),
-      radial-gradient(700px 600px at 0% 60%,    #d4c5ff, transparent 60%),
-      #eef2f7;
-    animation:huecycle 38s linear infinite;
+      radial-gradient(900px 800px at 0%   0%,   hsla(335, 70%, 35%, .35), transparent 60%),
+      radial-gradient(900px 800px at 100% 0%,   hsla(220, 70%, 35%, .35), transparent 60%),
+      radial-gradient(900px 800px at 50%  100%, hsla(160, 60%, 30%, .30), transparent 60%),
+      radial-gradient(900px 800px at 100% 60%,  hsla(40,  80%, 35%, .30), transparent 60%),
+      #0b0f1a;
+    animation:huecycle 40s linear infinite;
   }
   #attract > * { position:relative; z-index:1; }
   @keyframes huecycle { 0%{filter:hue-rotate(0deg)} 100%{filter:hue-rotate(360deg)} }
@@ -308,115 +307,91 @@
     flex:1; min-height:0; height:100%; width:100%;
   }
 
-  /* Frosted-glass card base */
-  .card { position:relative; border-radius:clamp(22px,1.8vw,34px);
-    padding:clamp(18px, 2vw, 36px);
-    background:rgba(255,255,255,.22);
-    backdrop-filter:blur(18px) saturate(160%);
-    -webkit-backdrop-filter:blur(18px) saturate(160%);
-    border:1px solid rgba(255,255,255,.4);
-    box-shadow:0 10px 30px rgba(20,30,60,.10), inset 0 1px 0 rgba(255,255,255,.5);
+  /* Flat tile base — solid dark surface, thin border, NO blur, NO heavy shadow */
+  .card { position:relative; border-radius:clamp(20px, 1.4vw, 28px);
+    padding:clamp(20px, 2.2vw, 40px);
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.08);
     overflow:hidden;
-    transition:transform .25s ease, box-shadow .25s ease;
-    display:flex; flex-direction:column; gap:6px;
-    color:#1a1a2e;
+    transition:transform .2s ease, background .2s ease, border-color .2s ease;
+    display:flex; flex-direction:column; gap:8px;
+    color:#e7e9ee;
   }
-  .card h2, .card h3 { font-family:'Poppins',sans-serif; font-weight:600; margin:0; line-height:1.08; letter-spacing:-.01em; color:#1a1a2e; }
-  .card h2 { font-size:clamp(32px, 4vw, 64px); }
-  .card h3 { font-size:clamp(18px, 2vw, 28px); }
-  .card p  { font-size:clamp(14px, 1.5vw, 19px); line-height:1.5; opacity:.85; margin:0; }
-  .card:active { transform:scale(.992); }
-  .card-label { font-size:clamp(11px,1vw,13px); letter-spacing:.22em; text-transform:uppercase; font-weight:700; color:rgba(26,26,46,.55); margin-bottom:6px; }
+  .card:hover { background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.14); }
+  .card h2, .card h3 { font-family:'Poppins',sans-serif; font-weight:500; margin:0; line-height:1.05; letter-spacing:-.015em; color:#f5f6f8; }
+  .card h2 { font-size:clamp(36px, 4.6vw, 84px); }
+  .card h3 { font-size:clamp(18px, 2vw, 28px); font-weight:600; }
+  .card p  { font-size:clamp(14px, 1.5vw, 20px); line-height:1.5; color:rgba(231,233,238,.7); margin:0; }
+  .card:active { transform:scale(.99); }
+  .card-label { font-size:clamp(11px,1vw,13px); letter-spacing:.24em; text-transform:uppercase; font-weight:700; color:rgba(231,233,238,.45); margin-bottom:8px; }
 
-  /* HERO — Talk to Zictabot (spans both cols, row 1) — slightly tinted glass + decorative blob */
+  /* HERO — Talk to Zictabot (spans both cols, row 1) — flat solid accent */
   .card-oni {
     grid-column:1 / -1; grid-row:1; cursor:pointer;
-    background:linear-gradient(135deg, rgba(24,194,156,.30), rgba(99,102,241,.18));
+    background:#0fbf98;
+    border-color:rgba(255,255,255,.08);
     justify-content:space-between;
   }
-  .card-oni::after {
-    content:""; position:absolute; right:-80px; top:-100px; width:380px; height:380px;
-    background:radial-gradient(circle, rgba(255,255,255,.45), transparent 70%); pointer-events:none;
-  }
-  .card-oni h2 { font-size:clamp(42px, 5.4vw, 88px); color:#0a2c24; position:relative; z-index:1; }
+  .card-oni:hover { background:#11cda6; border-color:rgba(255,255,255,.12); }
+  .card-oni h2 { font-size:clamp(42px, 5.6vw, 96px); color:#02201a; font-weight:600; }
   .card-oni h2 .accent {
     font-family:'Source Serif 4', Georgia, serif; font-style:italic; font-weight:500;
-    background:linear-gradient(120deg, #0a8f73, #1f4fd0, #be185d);
-    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    color:#fff;
+    -webkit-background-clip:initial; background-clip:initial; -webkit-text-fill-color:#fff; background:none;
   }
-  .card-oni p { color:rgba(10,44,36,.78); max-width:760px; position:relative; z-index:1; }
-  .card-cta { align-self:flex-start; margin-top:auto; position:relative; z-index:1;
-    padding:clamp(14px,1.6vw,20px) clamp(28px,3vw,48px); border-radius:999px;
-    background:#0a8f73; color:#fff; border:none; cursor:pointer;
+  .card-oni p { color:rgba(2,32,26,.78); max-width:760px; }
+  .card-cta { align-self:flex-start; margin-top:auto;
+    padding:clamp(14px,1.6vw,22px) clamp(28px,3vw,48px); border-radius:999px;
+    background:#02201a; color:#0fbf98; border:none; cursor:pointer;
     font-family:'Poppins',sans-serif; font-weight:700; font-size:clamp(16px,1.8vw,22px);
-    box-shadow:0 12px 28px rgba(10,143,115,.40); transition:transform .12s; }
-  .card-cta:hover { transform:translateY(-1px); }
+    transition:transform .12s, background .2s; }
+  .card-cta:hover { transform:translateY(-1px); background:#000; }
 
   /* TIME — col 1 row 2 */
-  .card-time {
-    grid-column:1; grid-row:2;
-    background:linear-gradient(135deg, rgba(167,139,250,.30), rgba(99,102,241,.18));
-    justify-content:center; align-items:flex-start;
-  }
-  .time-big { font-family:'Poppins',sans-serif; font-weight:600; font-size:clamp(52px, 6vw, 110px);
-    letter-spacing:-.03em; line-height:1; color:#1e1b4b; font-variant-numeric:tabular-nums; }
-  .time-date { font-size:clamp(14px,1.5vw,20px); color:rgba(30,27,75,.7); margin-top:6px; font-weight:500; }
+  .card-time { grid-column:1; grid-row:2; justify-content:center; align-items:flex-start; }
+  .time-big { font-family:'Poppins',sans-serif; font-weight:500; font-size:clamp(56px, 6.8vw, 130px);
+    letter-spacing:-.04em; line-height:1; color:#fff; font-variant-numeric:tabular-nums; }
+  .time-date { font-size:clamp(14px,1.5vw,20px); color:rgba(231,233,238,.6); margin-top:10px; font-weight:500; }
 
   /* WEATHER — col 2 row 2 */
-  .card-weather {
-    grid-column:2; grid-row:2;
-    background:linear-gradient(135deg, rgba(96,165,250,.30), rgba(59,130,246,.18));
-    justify-content:center; align-items:flex-start;
-  }
-  .weather-row { display:flex; align-items:center; gap:clamp(14px,1.6vw,22px); }
-  .weather-icon { font-size:clamp(48px, 5.5vw, 96px); line-height:1; }
-  .weather-temp { font-family:'Poppins',sans-serif; font-weight:600; font-size:clamp(52px, 6vw, 110px);
-    letter-spacing:-.03em; line-height:1; color:#0c2966; font-variant-numeric:tabular-nums; }
-  .weather-sub { font-size:clamp(14px,1.5vw,20px); color:rgba(12,41,102,.7); margin-top:6px; font-weight:500; }
+  .card-weather { grid-column:2; grid-row:2; justify-content:center; align-items:flex-start; }
+  .weather-row { display:flex; align-items:center; gap:clamp(14px,1.8vw,28px); }
+  .weather-icon { font-size:clamp(48px, 6vw, 108px); line-height:1; filter:saturate(110%); }
+  .weather-temp { font-family:'Poppins',sans-serif; font-weight:500; font-size:clamp(56px, 6.8vw, 130px);
+    letter-spacing:-.04em; line-height:1; color:#fff; font-variant-numeric:tabular-nums; }
+  .weather-sub { font-size:clamp(14px,1.5vw,20px); color:rgba(231,233,238,.6); margin-top:10px; font-weight:500; }
 
-  /* LIVE · YOU — full-bleed (col 1 row 3) */
-  .card-you { grid-column:1; grid-row:3; padding:0; background:rgba(10,22,38,.4);
-    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); overflow:hidden; }
+  /* LIVE · YOU — full-bleed dark webcam (col 1 row 3) */
+  .card-you { grid-column:1; grid-row:3; padding:0; background:#000; overflow:hidden; }
   #selfslot { position:relative; width:100%; height:100%; border-radius:inherit; overflow:hidden;
-    background:transparent; margin:0; }
+    background:#000; margin:0; }
 
-  /* QUIZ — col 2 row 3, glass with subtle tint */
-  .card-quiz {
-    grid-column:2; grid-row:3;
-    background:linear-gradient(135deg, rgba(99,102,241,.25), rgba(79,70,229,.15));
-  }
-  .card-quiz .qq { font-weight:600; font-size:clamp(15px,1.7vw,22px); margin:6px 0 10px; line-height:1.35; color:#1a1a2e; }
-  .card-quiz .qopts { display:flex; flex-direction:column; gap:clamp(7px,.9vw,12px); }
-  .card-quiz .qopt { text-align:left; padding:clamp(10px,1.2vw,16px) clamp(15px,1.5vw,22px);
-    border-radius:14px; background:rgba(255,255,255,.65); border:1px solid rgba(255,255,255,.6); color:#1e1b4b;
-    font-size:clamp(13px,1.5vw,18px); font-weight:500; cursor:pointer; transition:transform .12s, background .15s;
-    font-family:'Poppins',sans-serif; backdrop-filter:blur(4px); }
-  .card-quiz .qopt:hover { background:rgba(255,255,255,.85); }
-  .card-quiz .qopt.correct { background:rgba(200,243,220,.95); color:#053f30; border-color:rgba(10,143,115,.5); }
-  .card-quiz .qopt.wrong { background:rgba(255,208,214,.95); color:#6b1234; border-color:rgba(190,24,93,.5); }
-  .card-quiz .qfact { margin-top:10px; font-size:clamp(12px,1.3vw,16px); color:rgba(30,27,75,.65); min-height:1.2em; line-height:1.4; }
+  /* QUIZ — col 2 row 3 */
+  .card-quiz { grid-column:2; grid-row:3; }
+  .card-quiz .qq { font-weight:600; font-size:clamp(16px,1.8vw,24px); margin:6px 0 14px; line-height:1.35; color:#f5f6f8; }
+  .card-quiz .qopts { display:flex; flex-direction:column; gap:clamp(8px,1vw,12px); }
+  .card-quiz .qopt { text-align:left; padding:clamp(11px,1.3vw,17px) clamp(16px,1.6vw,22px);
+    border-radius:12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.10); color:#e7e9ee;
+    font-size:clamp(13px,1.5vw,18px); font-weight:500; cursor:pointer; transition:background .15s, border-color .15s;
+    font-family:'Poppins',sans-serif; }
+  .card-quiz .qopt:hover { background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.16); }
+  .card-quiz .qopt.correct { background:rgba(15,191,152,.18); color:#a7f3d0; border-color:rgba(15,191,152,.5); }
+  .card-quiz .qopt.wrong { background:rgba(244,63,94,.16); color:#fda4af; border-color:rgba(244,63,94,.4); }
+  .card-quiz .qfact { margin-top:12px; font-size:clamp(12px,1.3vw,16px); color:rgba(231,233,238,.55); min-height:1.2em; line-height:1.4; }
 
   /* DID YOU KNOW — col 1 row 4 */
-  .card-fact {
-    grid-column:1; grid-row:4;
-    background:linear-gradient(135deg, rgba(251,191,36,.28), rgba(245,158,11,.16));
-    justify-content:flex-start;
-  }
-  .card-fact .dyklabel { font-size:clamp(11px,1.1vw,14px); letter-spacing:.22em; text-transform:uppercase; font-weight:700; color:rgba(90,46,10,.65); }
-  .card-fact .dykbig { font-size:clamp(16px,1.9vw,26px); font-weight:500; line-height:1.4; transition:opacity .35s; opacity:.95; margin-top:10px; color:#5a2e0a; }
+  .card-fact { grid-column:1; grid-row:4; justify-content:flex-start; }
+  .card-fact .dyklabel { font-size:clamp(11px,1.1vw,14px); letter-spacing:.24em; text-transform:uppercase; font-weight:700; color:rgba(251,191,36,.85); }
+  .card-fact .dykbig { font-size:clamp(18px,2.1vw,28px); font-weight:500; line-height:1.4; transition:opacity .35s; opacity:.95; margin-top:14px; color:#f5f6f8; }
 
   /* NEED HELP — col 2 row 4 */
-  .card-contact {
-    grid-column:2; grid-row:4;
-    background:linear-gradient(135deg, rgba(244,114,182,.28), rgba(236,72,153,.16));
-  }
-  .card-contact h3 { color:#6b1234; }
-  .card-contact ul { list-style:none; padding:0; margin:10px 0 0; display:flex; flex-direction:column; gap:clamp(7px,.9vw,12px); }
-  .card-contact li { font-size:clamp(13px,1.6vw,20px); line-height:1.3; display:flex; align-items:center; gap:12px; color:#6b1234; font-weight:500; }
-  .card-contact li .num { display:inline-block; background:rgba(255,255,255,.85); padding:clamp(4px,.5vw,7px) clamp(11px,1.2vw,16px);
-    border-radius:999px; font-weight:800; color:#831843; font-family:'Poppins',sans-serif;
-    font-size:clamp(13px,1.4vw,18px); box-shadow:0 2px 8px rgba(190,24,93,.18); white-space:nowrap; letter-spacing:.02em;
-    backdrop-filter:blur(4px); }
+  .card-contact { grid-column:2; grid-row:4; }
+  .card-contact h3 { color:#fda4af; }
+  .card-contact ul { list-style:none; padding:0; margin:14px 0 0; display:flex; flex-direction:column; gap:clamp(8px,1vw,14px); }
+  .card-contact li { font-size:clamp(13px,1.6vw,20px); line-height:1.3; display:flex; align-items:center; gap:14px; color:rgba(231,233,238,.85); font-weight:500; }
+  .card-contact li .num { display:inline-block; background:rgba(255,255,255,.10); padding:clamp(5px,.6vw,8px) clamp(12px,1.3vw,18px);
+    border-radius:999px; font-weight:700; color:#fff; font-family:'Poppins',sans-serif;
+    font-size:clamp(14px,1.5vw,20px); border:1px solid rgba(255,255,255,.12); white-space:nowrap; letter-spacing:.02em; }
 
   /* Selfie square gets a clean white frame on the new bright theme */
   #self { border:3px solid #fff; box-shadow:0 0 0 4px rgba(15,191,152,.22), 0 22px 50px rgba(20,30,60,.18); }
@@ -512,7 +487,7 @@
     <div class="page">
       <header class="phead">
         <div class="kicker">ZICTA · ZAMBIA ICT AUTHORITY</div>
-        <h1 id="attracttitle">Meet Oni</h1>
+        <h1 id="attracttitle">Meet Zictabot</h1>
         <p id="attractsub">Your AI host for ZICTA — ask about SIM registration, online safety, the .zm domain and more. Tap any card to get started.</p>
       </header>
       <div class="grid">
@@ -753,7 +728,7 @@ const FACTS=[
 // animated loading screen text + facts
 let connTimer=null, connAt=0;
 function startConn(){
-  const name = cfg.agentName || "Oni";
+  const name = cfg.agentName || "Zictabot";
   const msgs = ["Waking up "+name+"…","Connecting securely…","Setting up your conversation…","Almost ready…"];
   const m=el("connmsg"), fEl=el("loadfact");
   let i=0, k=0, fi=Math.floor(Math.random()*FACTS.length);
@@ -888,7 +863,7 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
   tickClock(); setInterval(tickClock, 1000);
   startCamera();
   requestAnimationFrame(() => requestAnimationFrame(positionSelfToSlot));
-  console.log("ZICTA build: TV-interface — frosted glass tiles + clock + weather v14");
+  console.log("ZICTA build: flat dark TV-interface tiles, Zictabot consistent v15");
 })();
 
 // ---------- session ----------
