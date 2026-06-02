@@ -270,6 +270,7 @@
     #quiz .qfact { margin-top:15px; font-size:clamp(14px,3.4vw,18px); color:var(--muted); min-height:1.2em; line-height:1.45; }
   }
 </style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm"}}</script>
 </head>
 <body>
   <div id="bg"></div>
@@ -337,6 +338,7 @@
 <script type="module">
 import { LiveAvatarSession, SessionEvent, SessionState, AgentEventsEnum, SessionInteractivityMode }
   from "https://cdn.jsdelivr.net/npm/@heygen/liveavatar-web-sdk@0.0.18/+esm";
+import * as THREE from "three";
 
 const el = (id) => document.getElementById(id);
 const video = el("video"), talk = el("talk"), messages = el("messages"), livecap = el("livecap");
@@ -423,33 +425,70 @@ function finalize(sender, text){
 }
 
 // constellation backdrop (connectivity theme) — runs on the landing
+// 3D landing background: particle network + rotating wireframe shapes (GPU, low cost on 4K)
 let net = null;
 function startNet(){
-  const c = el("net"); if (!c || net) return;
-  const ctx = c.getContext("2d");
-  let w=0,h=0,raf=0,running=true,last=0; const nodes=[];
-  // cap the canvas backing resolution (huge perf win on 4K screens) and let CSS stretch it
-  const size=()=>{ const cw=c.offsetWidth||innerWidth, ch=c.offsetHeight||innerHeight;
-    const s=Math.min(1, 1300/Math.max(cw,ch,1)); w=c.width=Math.max(2,(cw*s)|0); h=c.height=Math.max(2,(ch*s)|0); };
-  size();
-  const N=32, MAX=120;
-  for(let i=0;i<N;i++) nodes.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25});
-  function frame(t){
-    if(!running) return;
-    raf=requestAnimationFrame(frame);
-    if(t-last<33) return; last=t;                 // ~30fps cap (matches the screen)
-    ctx.clearRect(0,0,w,h);
-    for(const n of nodes){ n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>w)n.vx*=-1; if(n.y<0||n.y>h)n.vy*=-1; }
-    for(let i=0;i<N;i++) for(let j=i+1;j<N;j++){
-      const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, d=Math.hypot(dx,dy);
-      if(d<MAX){ ctx.strokeStyle="rgba(15,191,152,"+(.18*(1-d/MAX)).toFixed(3)+")"; ctx.lineWidth=1;
-        ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); }
-    }
-    for(const n of nodes){ ctx.fillStyle="rgba(47,109,246,.55)"; ctx.beginPath(); ctx.arc(n.x,n.y,2,0,7); ctx.fill(); }
+  const canvas = el("net"); if (!canvas || net) return;
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:false, powerPreference:"high-performance" }); }
+  catch(e){ console.warn("WebGL unavailable:", e); return; }
+  renderer.setPixelRatio(1);
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(55, 1, 0.1, 200); cam.position.z = 8;
+  const size = () => {
+    const cw = canvas.clientWidth || innerWidth, ch = canvas.clientHeight || innerHeight;
+    const s = Math.min(1, 1200 / Math.max(cw, ch, 1));   // cap backing resolution (4K-safe)
+    renderer.setSize(Math.round(cw * s), Math.round(ch * s), false);
+    cam.aspect = cw / ch; cam.updateProjectionMatrix();
+  };
+  size(); addEventListener("resize", size);
+
+  // 200-point cloud + lines between near neighbors (precomputed -> 1 GPU draw per frame)
+  const N = 200, positions = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    positions[i*3]   = (Math.random()-.5)*18;
+    positions[i*3+1] = (Math.random()-.5)*12;
+    positions[i*3+2] = (Math.random()-.5)*8;
   }
-  addEventListener("resize", size);
-  raf=requestAnimationFrame(frame);
-  net = { pause(){ running=false; cancelAnimationFrame(raf); }, resume(){ if(!running){ running=true; last=0; raf=requestAnimationFrame(frame); } } };
+  const pointGeo = new THREE.BufferGeometry();
+  pointGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const points = new THREE.Points(pointGeo, new THREE.PointsMaterial({ color:0x2f6df6, size:0.08, transparent:true, opacity:0.85 }));
+  const lineIdx = []; const MAX_D = 2.7;
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+    const dx=positions[i*3]-positions[j*3], dy=positions[i*3+1]-positions[j*3+1], dz=positions[i*3+2]-positions[j*3+2];
+    if ((dx*dx + dy*dy + dz*dz) < MAX_D * MAX_D) lineIdx.push(i, j);
+  }
+  const lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  lineGeo.setIndex(lineIdx);
+  const lines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({ color:0x0fbf98, transparent:true, opacity:0.32 }));
+  const cloud = new THREE.Group(); cloud.add(points); cloud.add(lines); scene.add(cloud);
+
+  // Central wireframe icosahedron + a torus knot + a dodecahedron (3D "artifacts")
+  const mk = (geom, color, opacity) => new THREE.LineSegments(
+    new THREE.EdgesGeometry(geom),
+    new THREE.LineBasicMaterial({ color, transparent:true, opacity })
+  );
+  const ico    = mk(new THREE.IcosahedronGeometry(1.6, 0),         0x18c29c, 0.75); scene.add(ico);
+  const torus  = mk(new THREE.TorusKnotGeometry(0.7, 0.22, 48, 8), 0x7a56ff, 0.65); torus.position.set(-5.2, 2.5, -1.5); scene.add(torus);
+  const dodeca = mk(new THREE.DodecahedronGeometry(0.95),          0x2f6df6, 0.65); dodeca.position.set( 5.2,-2.6, -1.5); scene.add(dodeca);
+
+  let running = true, raf = 0, last = 0;
+  function frame(t) {
+    if (!running) return;
+    raf = requestAnimationFrame(frame);
+    if (t - last < 33) return; last = t;             // ~30fps cap
+    cloud.rotation.y += 0.0006; cloud.rotation.x += 0.0002;
+    ico.rotation.y   += 0.0040; ico.rotation.x   += 0.0025;
+    torus.rotation.y -= 0.0050; torus.rotation.z += 0.0030;
+    dodeca.rotation.y += 0.0040; dodeca.rotation.x -= 0.0020;
+    renderer.render(scene, cam);
+  }
+  raf = requestAnimationFrame(frame);
+  net = {
+    pause(){ running=false; cancelAnimationFrame(raf); },
+    resume(){ if(!running){ running=true; last=0; size(); raf=requestAnimationFrame(frame); } }
+  };
 }
 
 // ambient rising bubbles (fill the white space)
@@ -592,7 +631,7 @@ function selfTalking(on){ const s=el("self"); if (s) s.classList.toggle("talking
   spawnBubbles();                                   // ambient motion to fill the white space
   renderQuiz();                                     // interactive quiz (portrait kiosk)
   startCamera();                                    // auto-show the live "you" square on the landing
-  console.log("ZICTA build: landing perf (low-res cam, static glow, GPU rings) v7");
+  console.log("ZICTA build: 3D landing (Three.js: point cloud + wireframe shapes) v8");
 })();
 
 // ---------- session ----------
