@@ -106,16 +106,30 @@
 
     <!-- App tiles: ZICTA AI + Mini Games -->
     <div class="tile-row">
-      <!-- Talk to Zictabot — LIVE photoreal avatar (colored hero) -->
-      <div class="widget tile tinted-ai pos-ai" data-app="zictabot">
-        <div class="tile-body">
-          <div class="ico" style="background:rgba(255,255,255,.22)">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 1 6 6v1.5a4.5 4.5 0 0 1-4.5 4.5H12l-3.2 3v-3a4.8 4.8 0 0 1-2.8-4.4V9a6 6 0 0 1 6-6Z" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/><circle cx="9.6" cy="10" r="1.1" fill="#fff"/><circle cx="14.4" cy="10" r="1.1" fill="#fff"/></svg>
-          </div>
-          <h3>Talk to Zictabot</h3>
-          <p>Have a live, face-to-face chat with our AI host.</p>
-          <span class="go"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <!-- Talk to Zictabot — 2D robot host (eye-tracking + colour-shift bg) -->
+      <div class="widget tile tinted-ai pos-ai zbot-tile" data-app="zictabot">
+        <div class="zbot-scene" id="zbotScene">
+          <span class="zbot-aura"></span>
+          <svg class="zbot-svg" viewBox="0 0 120 120" aria-hidden="true">
+            <line x1="60" y1="20" x2="60" y2="9" stroke="#eaf6ff" stroke-width="2.4" stroke-linecap="round"/>
+            <circle cx="60" cy="7" r="3.4" fill="#bff0ff" class="zbot-blip"/>
+            <rect x="30" y="20" width="60" height="48" rx="16" fill="rgba(255,255,255,.16)" stroke="#eaf6ff" stroke-width="2.2"/>
+            <rect x="24" y="36" width="6" height="16" rx="3" fill="#eaf6ff"/>
+            <rect x="90" y="36" width="6" height="16" rx="3" fill="#eaf6ff"/>
+            <g class="zbot-eyes">
+              <rect x="40" y="34" width="16" height="16" rx="8" fill="#06283d"/>
+              <rect x="64" y="34" width="16" height="16" rx="8" fill="#06283d"/>
+              <g id="zPupils"><circle cx="48" cy="42" r="4.2" fill="#7df0ff"/><circle cx="72" cy="42" r="4.2" fill="#7df0ff"/></g>
+              <g class="zbot-lids">
+                <rect x="40" y="34" width="16" height="16" rx="8" fill="#2f63c4"/>
+                <rect x="64" y="34" width="16" height="16" rx="8" fill="#2f63c4"/>
+              </g>
+            </g>
+            <rect x="48" y="56" width="24" height="5" rx="2.5" fill="#bff0ff" class="zbot-mouth"/>
+            <path d="M44 68 h32 a6 6 0 0 1 6 6 v9 H38 v-9 a6 6 0 0 1 6-6Z" fill="rgba(255,255,255,.12)" stroke="#eaf6ff" stroke-width="2"/>
+          </svg>
         </div>
+        <div class="zbot-cap"><h3>Talk to Zictabot</h3><p>Tap to chat with your AI host</p></div>
       </div>
 
       <!-- Mini Games tile -->
@@ -141,6 +155,43 @@
       </div>
     </div>
 
+    <!-- Network Pulse widget -->
+    <div class="widget w-net pos-net tinted-net" data-w="net">
+      <div class="grab"></div>
+      <div class="w-head"><span class="dot"></span> Network Pulse · live</div>
+      <div class="net-list" id="netBars"></div>
+    </div>
+
+    <!-- Cyber Weather (threat gauge) widget -->
+    <div class="widget w-threat pos-threat" data-w="threat">
+      <div class="grab"></div>
+      <div class="w-head"><span class="dot"></span> Cyber Weather</div>
+      <div class="wx-gauge">
+        <svg viewBox="0 0 120 72" class="wx-arc">
+          <path d="M10 64 A50 50 0 0 1 110 64" fill="none" stroke="rgba(8,47,73,.12)" stroke-width="9" stroke-linecap="round"/>
+          <path d="M10 64 A50 50 0 0 1 110 64" fill="none" stroke="url(#wxg)" stroke-width="9" stroke-linecap="round"/>
+          <defs><linearGradient id="wxg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#22c55e"/><stop offset=".5" stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/></linearGradient></defs>
+          <g id="wxNeedle" class="wx-needle"><line x1="60" y1="64" x2="60" y2="24" stroke="#06283d" stroke-width="3" stroke-linecap="round"/><circle cx="60" cy="64" r="5" fill="#06283d"/></g>
+        </svg>
+      </div>
+      <div class="wx-level mod" id="wxLabel">MODERATE</div>
+      <div class="wx-tip" id="wxTip">—</div>
+    </div>
+
+    <!-- Leaderboard widget -->
+    <div class="widget w-board pos-board" data-w="board">
+      <div class="grab"></div>
+      <div class="w-head"><span class="dot"></span> Leaderboard · best scores</div>
+      <div class="board-list" id="boardList"></div>
+    </div>
+
+    <!-- Quick Actions widget -->
+    <div class="widget w-quick pos-quick" data-w="quick">
+      <div class="grab"></div>
+      <div class="w-head"><span class="dot"></span> Quick Actions</div>
+      <div class="qa-grid" id="quickGrid"></div>
+    </div>
+
   </div>
 
   <!-- ===================== DOCK ===================== -->
@@ -156,9 +207,6 @@
     </div>
     <div class="dock-app" data-app="zictabot"><span class="label">Talk to Zictabot</span>
       <div class="ico ic-ai" style="width:100%;height:100%;border-radius:17px;box-shadow:none;display:grid;place-items:center;"><svg width="27" height="27" viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 1 6 6v1.5a4.5 4.5 0 0 1-4.5 4.5H12l-3.2 3v-3a4.8 4.8 0 0 1-2.8-4.4V9a6 6 0 0 1 6-6Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><circle cx="9.6" cy="10" r="1" fill="#fff"/><circle cx="14.4" cy="10" r="1" fill="#fff"/></svg></div>
-    </div>
-    <div class="dock-app" data-app="ai"><span class="label">AI Chat</span>
-      <div class="ico ic-ai" style="width:100%;height:100%;border-radius:17px;box-shadow:none;display:grid;place-items:center;opacity:.9;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16H9l-4 4v-4H6.5" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" fill="none"/></svg></div>
     </div>
     <div class="dock-app" data-app="arcade"><span class="label">Mini Games</span>
       <div class="ico ic-arcade" style="width:100%;height:100%;border-radius:17px;box-shadow:none;display:grid;place-items:center;"><svg width="27" height="27" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="7" width="19" height="10" rx="5" stroke="#fff" stroke-width="1.7"/><path d="M7 10v4M5 12h4" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><circle cx="15.5" cy="11" r="1.1" fill="#fff"/><circle cx="18" cy="13.5" r="1.1" fill="#fff"/></svg></div>

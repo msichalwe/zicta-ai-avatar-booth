@@ -88,6 +88,7 @@ window.buildZictabot = function (app, ctx) {
 
   (async function start(){
     try { cfg = await (await fetch('/api/config')).json(); } catch {}
+    if (disposed) return;                       // closed before we even got config
     if (!cfg.hasLiveAvatar){
       showOver('Add a LiveAvatar key', 'Set <code>liveavatarApiKey</code> in <code>config.json</code> on the server, then restart.', false, false);
       return;
@@ -96,20 +97,32 @@ window.buildZictabot = function (app, ctx) {
     let tok;
     try { tok = await (await fetch('/api/la-token',{method:'POST'})).json(); if(!tok.sessionToken) throw new Error(tok.error||'no token'); }
     catch(e){ return showOver('Could not connect', String(e.message||e), false, false); }
+    if (disposed) return;                       // closed while fetching the token — never open a session
     ptt = !!tok.pushToTalk;
     try { SDK = await import(SDK_URL); }
     catch(e){ return showOver('Could not load avatar engine', 'Check the internet connection.', false, false); }
+    if (disposed) return;
     try {
       const { LiveAvatarSession, SessionInteractivityMode } = SDK;
       session = new LiveAvatarSession(tok.sessionToken, {
         voiceChat: ptt ? { mode: SessionInteractivityMode.PUSH_TO_TALK } : true,
         apiUrl: tok.apiUrl || 'https://api.liveavatar.com'
       });
+      // user closed the app during setup → stop immediately so the avatar never starts billing
+      if (disposed) { stopSession(); return; }
       wire();
       await session.start();
+      if (disposed) { stopSession(); return; } // closed mid-handshake → end the session we just started
       keepAlive = setInterval(()=>{ try{ session && session.keepAlive(); }catch{} }, 150000);
     } catch(e){ showOver('Could not start Zictabot', String(e.message||e), false, false); }
   })();
+
+  // Hard stop: release the mic, end the live session, drop the reference. Safe to call repeatedly.
+  function stopSession(){
+    try { session && session.voiceChat && session.voiceChat.stop && session.voiceChat.stop(); } catch {}
+    try { session && session.stop(); } catch {}
+    session = null;
+  }
 
   function wire(){
     const { SessionEvent, SessionState, AgentEventsEnum } = SDK;
@@ -183,5 +196,10 @@ window.buildZictabot = function (app, ctx) {
   function aiIco(){ return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 1 6 6v1.5a4.5 4.5 0 0 1-4.5 4.5H12l-3.2 3v-3a4.8 4.8 0 0 1-2.8-4.4V9a6 6 0 0 1 6-6Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><circle cx="9.6" cy="10" r="1" fill="#fff"/><circle cx="14.4" cy="10" r="1" fill="#fff"/></svg>'; }
   function x(){ return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'; }
 
-  return { onClose: () => { disposed=true; cleanup(); try{ session && session.stop(); }catch{} } };
+  return { onClose: () => {
+    if (disposed) return;        // idempotent — closeApp may fire this more than once
+    disposed = true; ending = true;   // block any late finish()/onEnded() from re-opening anything
+    cleanup();                   // clears keepAlive ping, idle watch, timers; detaches video
+    stopSession();               // releases mic + ends the live avatar so it stops consuming tokens
+  } };
 };

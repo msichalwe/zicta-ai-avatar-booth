@@ -14,6 +14,8 @@
   background: #0c4a6e; border: 3px solid rgba(255,255,255,.7);
 }
 .cam-frame video, .cam-frame canvas { width: 100%; height: 100%; object-fit: cover; display: block; transform: scaleX(-1); }
+/* the live booth canvas mirrors internally, so don't CSS-flip it */
+.cam-frame .cam-live { transform: none; background: #0a1626; border-radius: 24px; }
 .cam-frame .vignette { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 90px rgba(8,47,73,.5); border-radius: 24px; }
 .cam-frame .badge {
   position: absolute; left: 16px; bottom: 14px; z-index: 3; display: flex; align-items: center; gap: 8px;
@@ -264,3 +266,93 @@
 @media (orientation: portrait) {
   .game-cards { grid-template-columns: 1fr; }
 }
+
+/* =================== QUIZ TOPIC PICKER =================== */
+.quiz-wrap { overflow-y: auto; }
+.quiz-wrap.is-menu { align-items: start; }
+.picker { width: min(100%, 780px); text-align: center; }
+.picker-h { font-family:'Sora'; font-size: 28px; font-weight: 800; }
+.picker-sub { color: var(--ink-soft); font-size: 15px; font-weight: 600; margin: 8px 0 24px; }
+.pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; text-align: left; }
+.pick-card { font-family: inherit; cursor: pointer; border: 1px solid rgba(255,255,255,.7); background: rgba(255,255,255,.62);
+  border-radius: 22px; padding: 20px; box-shadow: var(--sh-md); transition: transform .3s var(--spring), box-shadow .3s; }
+.pick-card:hover { transform: translateY(-5px); box-shadow: var(--sh-lg); }
+.pick-ico { width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; box-shadow: var(--sh-sm); margin-bottom: 12px; }
+.pick-tag { font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-2); }
+.pick-card h3 { font-family:'Sora'; font-size: 18px; font-weight: 700; margin: 5px 0; color: var(--ink); }
+.pick-card p { font-size: 13px; color: var(--ink-soft); line-height: 1.4; font-weight: 500; }
+.pick-meta { display: block; margin-top: 12px; font-size: 12px; font-weight: 700; color: var(--ocean-2); }
+.qback { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px; border: none; cursor: pointer;
+  background: rgba(8,47,73,.07); color: var(--ocean-3); display: grid; place-items: center; transition: .2s var(--ease); }
+.qback:hover { background: rgba(8,47,73,.14); }
+
+/* =================== ARCADE: 10-GAME GRID =================== */
+.arcade-menu { width: min(100%, 920px); }
+.game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; text-align: left; }
+.game-grid .game-card { padding: 18px; border-radius: 20px; }
+.game-grid .game-ico { width: 48px; height: 48px; margin-bottom: 10px; }
+.game-grid .game-card h3 { font-size: 18px; margin: 5px 0 4px; }
+.game-grid .game-card p { font-size: 12.5px; }
+.game-grid .game-play { margin-top: 12px; font-size: 13px; }
+.game-stage .actions { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
+code.pw { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 17px; font-weight: 700; word-break: break-all;
+  color: var(--ocean-3); background: rgba(8,47,73,.06); padding: 3px 9px; border-radius: 8px; }
+
+/* =================== CYBER TAC-TOE =================== */
+.ttt-status { text-align: center; font-weight: 700; color: var(--ink-soft); margin-bottom: 12px; }
+.ttt-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: min(100%, 320px); margin: 0 auto; }
+.ttt-cell { aspect-ratio: 1; font-size: 32px; border-radius: 16px; cursor: pointer; border: 2px solid rgba(255,255,255,.7);
+  background: rgba(255,255,255,.6); display: grid; place-items: center; transition: .2s var(--ease); }
+.ttt-cell:hover:not(:disabled) { background: #fff; transform: translateY(-2px); }
+.ttt-cell:disabled { cursor: default; }
+.ttt-score { text-align: center; margin-top: 16px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.ttt-score b { color: var(--ocean-2); }
+
+/* =================== MEMORY MATCH =================== */
+.mem-hint { text-align: center; color: var(--ink-soft); font-weight: 600; font-size: 14px; margin-bottom: 14px; }
+.mem-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: min(100%, 470px); margin: 0 auto; }
+.mem-card { aspect-ratio: 3/4; border-radius: 14px; cursor: pointer; border: none; position: relative; overflow: hidden;
+  background: linear-gradient(150deg, var(--accent), var(--ocean-2)); box-shadow: var(--sh-sm); transition: transform .3s var(--spring); }
+.mem-card:hover:not(.done) { transform: translateY(-3px); }
+.mem-card::after { content: "?"; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.85); font-size: 22px; font-weight: 800; transition: opacity .2s; }
+.mem-card.on::after, .mem-card.done::after { opacity: 0; }
+.mem-face { position: absolute; inset: 0; display: grid; place-items: center; padding: 6px; text-align: center;
+  font-size: 12.5px; font-weight: 700; color: var(--ink); background: rgba(255,255,255,.95); border-radius: 14px;
+  opacity: 0; transform: rotateY(90deg); transition: .25s var(--ease); }
+.mem-card.on .mem-face, .mem-card.done .mem-face { opacity: 1; transform: none; }
+.mem-card.done { box-shadow: 0 0 0 3px #16a34a; }
+
+/* =================== THREAT DEFENDER =================== */
+.def-field { position: relative; height: 330px; max-height: 48vh; border-radius: 20px; overflow: hidden; margin-top: 6px;
+  background: linear-gradient(180deg, rgba(56,189,248,.12), rgba(2,132,199,.05)); border: 1px solid rgba(255,255,255,.6); }
+.def-server { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 3;
+  font-weight: 800; font-size: 13px; color: var(--ocean-2); background: rgba(255,255,255,.75); padding: 6px 14px; border-radius: 10px; }
+.def-chip { position: absolute; top: -12%; font-family: inherit; font-weight: 700; font-size: 13px; cursor: pointer;
+  padding: 9px 13px; border-radius: 12px; border: 2px solid transparent; box-shadow: var(--sh-sm);
+  transition: top 3.2s linear, transform .3s var(--spring), opacity .3s, background .2s; }
+.def-chip.bad { background: #fee2e2; color: #b91c1c; }
+.def-chip.safe { background: #dcfce7; color: #15803d; }
+.def-chip.drop { top: 84%; }
+.def-chip.zapped { background: #16a34a; color: #fff; transform: scale(1.18); opacity: 0; }
+.def-chip.passed { opacity: .35; }
+.def-chip.miss { background: #dc2626; color: #fff; transform: scale(.9); }
+.def-chip.gone { pointer-events: none; }
+
+/* =================== CIPHER CRACK =================== */
+.cipher-box { text-align: center; margin: 6px 0 18px; }
+.cipher-text { font-family: ui-monospace, Menlo, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: var(--ocean-2);
+  background: rgba(8,47,73,.06); padding: 14px 20px; border-radius: 16px; display: inline-block; }
+
+/* =================== BINARY BLOCKS =================== */
+.bin-target { text-align: center; font-size: 16px; font-weight: 700; color: var(--ink-soft); margin: 4px 0 16px; }
+.bin-target b { font-family:'Sora'; font-size: 30px; color: var(--ocean-2); }
+.bin-row { display: flex; gap: 12px; justify-content: center; }
+.bin-bit { width: 64px; height: 84px; border-radius: 16px; cursor: pointer; border: 2px solid rgba(255,255,255,.7);
+  background: rgba(255,255,255,.6); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: .2s var(--spring); }
+.bin-bit:hover:not(:disabled) { transform: translateY(-3px); }
+.bin-bit .bv { font-family:'Sora'; font-size: 30px; font-weight: 800; color: var(--ink-soft); }
+.bin-bit .bw { font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.bin-bit.on { background: linear-gradient(150deg, var(--accent), var(--ocean-2)); border-color: transparent; }
+.bin-bit.on .bv, .bin-bit.on .bw { color: #fff; }
+.bin-sum { text-align: center; margin: 16px 0 4px; font-size: 15px; font-weight: 700; color: var(--ink-soft); }
+.bin-sum b { color: var(--ocean-2); font-size: 20px; }
