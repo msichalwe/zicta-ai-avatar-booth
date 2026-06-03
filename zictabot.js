@@ -10,7 +10,24 @@ window.buildZictabot = function (app, ctx) {
   if (!document.getElementById('zb-style')) {
     const st = document.createElement('style'); st.id = 'zb-style';
     st.textContent = `
-      .zb-stage{position:absolute;inset:0;background:#0a1626;overflow:hidden;display:flex;align-items:center;justify-content:center}
+      .zb-body{display:flex;height:100%;width:100%}
+      .zb-stage{position:relative;flex:1;min-width:0;background:#0a1626;overflow:hidden;display:flex;align-items:center;justify-content:center}
+      /* side chat panel */
+      .zb-chat{flex:0 0 clamp(300px,26vw,400px);display:flex;flex-direction:column;background:#0c1f33;border-left:1px solid rgba(255,255,255,.08);min-height:0}
+      .zb-chat-head{padding:16px 18px;font-family:'Sora',sans-serif;font-weight:700;font-size:16px;color:#eaf4ff;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px}
+      .zb-chat-head .dot{width:8px;height:8px;border-radius:50%;background:#18c29c;box-shadow:0 0 0 0 rgba(24,194,156,.5);animation:zbpulse 2s infinite}
+      .zb-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+      .zb-msgs::-webkit-scrollbar{width:7px}.zb-msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:4px}
+      .zb-empty{margin:auto;text-align:center;color:rgba(234,244,255,.45);font-family:'Manrope',sans-serif;font-size:14px;padding:20px}
+      .zb-msg{max-width:88%;padding:10px 14px;border-radius:15px;font-family:'Manrope',sans-serif;font-size:14.5px;line-height:1.4;word-wrap:break-word}
+      .zb-msg .who{display:block;font-size:10px;letter-spacing:.4px;text-transform:uppercase;opacity:.55;margin-bottom:3px;font-weight:700}
+      .zb-msg.bot{align-self:flex-start;background:linear-gradient(135deg,rgba(24,194,156,.22),rgba(34,211,238,.16));color:#dffaf2;border-bottom-left-radius:4px}
+      .zb-msg.user{align-self:flex-end;background:rgba(255,255,255,.10);color:#eaf4ff;border-bottom-right-radius:4px}
+      .zb-form{display:flex;gap:8px;padding:14px;border-top:1px solid rgba(255,255,255,.08)}
+      .zb-input{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:12px 16px;color:#eaf4ff;font-family:'Manrope',sans-serif;font-size:14px;outline:none}
+      .zb-input::placeholder{color:rgba(234,244,255,.4)}
+      .zb-send{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;background:radial-gradient(circle at 35% 30%,#18c29c,#0a8f73);color:#fff;display:grid;place-items:center}
+      @media (orientation:portrait){.zb-body{flex-direction:column}.zb-chat{flex:0 0 38%;border-left:none;border-top:1px solid rgba(255,255,255,.08)}}
       .zb-video{width:100%;height:100%;object-fit:cover;background:#0a1626;display:block}
       .zb-cap{position:absolute;left:50%;bottom:118px;transform:translateX(-50%);max-width:86%;text-align:center;
         font-family:'Manrope',system-ui,sans-serif;font-size:clamp(16px,2.4vw,26px);font-weight:600;color:#fff;
@@ -51,7 +68,7 @@ window.buildZictabot = function (app, ctx) {
       <div class="sp"></div>
       <button class="close-app" title="Close (Esc)">${x()}</button>
     </div>
-    <div class="app-body" style="padding:0">
+    <div class="app-body zb-body" style="padding:0">
       <div class="zb-stage">
         <video class="zb-video" id="zbVideo" autoplay playsinline></video>
         <div class="zb-timer zb-hidden" id="zbTimerBar"><span class="zb-clock" id="zbClock">1:30</span><button class="zb-plus" id="zbPlus">+20s</button></div>
@@ -66,13 +83,41 @@ window.buildZictabot = function (app, ctx) {
           <button class="zb-btn zb-hidden" id="zbAgain">Start again</button>
         </div>
       </div>
+      <aside class="zb-chat">
+        <div class="zb-chat-head"><span class="dot"></span> Conversation</div>
+        <div class="zb-msgs" id="zbMsgs"><div class="zb-empty">Your chat with Zictabot appears here. Speak out loud, or type a question below.</div></div>
+        <form class="zb-form" id="zbForm" autocomplete="off">
+          <input class="zb-input" id="zbInput" placeholder="Type a question…" />
+          <button class="zb-send" type="submit" aria-label="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12 20 5l-4 15-4-6-8-2Z" fill="#fff"/></svg></button>
+        </form>
+      </aside>
     </div>`;
 
   const $ = (s) => app.querySelector(s);
   const video = $('#zbVideo'), cap = $('#zbCap'), userCap = $('#zbUserCap');
   const over = $('#zbOver'), spin = $('#zbSpin'), title = $('#zbTitle'), msg = $('#zbMsg'), again = $('#zbAgain');
   const mic = $('#zbMic'), hint = $('#zbHint'), timerBar = $('#zbTimerBar'), clockEl = $('#zbClock'), plus = $('#zbPlus');
+  const msgsEl = $('#zbMsgs'), chatForm = $('#zbForm'), chatInput = $('#zbInput');
   app.querySelector('.close-app').onclick = ctx.close;
+
+  /* ---- side chat / transcript ---- */
+  let curBot = null;
+  function botName(){ return (cfg && cfg.agentName) || 'Zictabot'; }
+  function addMsg(role, text){
+    const empty = msgsEl.querySelector('.zb-empty'); if (empty) empty.remove();
+    const el = document.createElement('div'); el.className = 'zb-msg ' + role;
+    el.innerHTML = `<span class="who">${role === 'bot' ? botName() : 'You'}</span><span class="t"></span>`;
+    el.querySelector('.t').textContent = text || '';
+    msgsEl.appendChild(el); msgsEl.scrollTop = msgsEl.scrollHeight; return el;
+  }
+  function botChunk(txt){ if (!curBot) curBot = addMsg('bot', ''); const t = curBot.querySelector('.t'); t.textContent += txt; msgsEl.scrollTop = msgsEl.scrollHeight; }
+  function botFinal(txt){ if (!curBot) curBot = addMsg('bot', ''); if (txt) curBot.querySelector('.t').textContent = txt; curBot = null; msgsEl.scrollTop = msgsEl.scrollHeight; }
+  chatForm.onsubmit = (e) => {
+    e.preventDefault();
+    const q = chatInput.value.trim(); if (!q || !session) return;
+    chatInput.value = ''; addMsg('user', q); bump();
+    try { if (session.message) session.message(q); else if (session.repeat) session.repeat(q); } catch (err) { console.warn(err); }
+  };
 
   let SDK = null, cfg = {}, session = null, ptt = false, ending = false, closing = false, goodbyeLive = false;
   let keepAlive = null, idleWatch = null, timerInt = null, closeSafety = null, farewellTimer = null, farewellPending = false;
@@ -135,10 +180,11 @@ window.buildZictabot = function (app, ctx) {
     session.on(AgentEventsEnum.USER_SPEAK_STARTED, ()=>{ bump(); if(!ptt) setMic('listening'); });
     session.on(AgentEventsEnum.USER_SPEAK_ENDED, ()=>{ bump(); if(!ptt) setMic('idle'); });
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (e)=>{ userCap.textContent = e.text ? '“'+e.text+'”' : '';
+      if(e.text) addMsg('user', e.text);
       if(FAREWELL.test(e.text||'')){ farewellPending=true; clearTimeout(farewellTimer); farewellTimer=setTimeout(()=>{ if(farewellPending){farewellPending=false; finish();} }, 9000); } });
     let line='';
-    session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION_CHUNK, (e)=>{ line+=(e.text||''); cap.textContent=line; cap.classList.add('show'); });
-    session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION, (e)=>{ line=''; cap.textContent=e.text||''; cap.classList.add('show'); });
+    session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION_CHUNK, (e)=>{ line+=(e.text||''); cap.textContent=line; cap.classList.add('show'); botChunk(e.text||''); });
+    session.on(AgentEventsEnum.AVATAR_TRANSCRIPTION, (e)=>{ line=''; cap.textContent=e.text||''; cap.classList.add('show'); botFinal(e.text||''); });
   }
 
   async function onReady(){

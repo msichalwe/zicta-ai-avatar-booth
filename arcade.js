@@ -53,14 +53,15 @@ window.buildArcade = function (app, ctx) {
         <h2 class="arcade-h">Choose a game</h2>
         <p class="arcade-sub">${GAMES.length} quick games — sharpen your security, law &amp; tech instincts.</p>
         <div class="game-grid">
-          ${GAMES.map(g => `
+          ${GAMES.map(g => { const b = (window.TideScore && window.TideScore.best(g.key)); return `
             <button class="game-card" data-g="${g.key}">
+              ${b != null ? `<span class="game-best">★ ${b}%</span>` : ''}
               <div class="game-ico" style="background:${g.grad}">${g.ico}</div>
               <span class="game-tag">${g.cat}</span>
               <h3>${g.title}</h3>
               <p>${g.blurb}</p>
-              <span class="game-play">Play ${ic.arrow()}</span>
-            </button>`).join('')}
+              <span class="game-play">${b != null ? 'Beat your best' : 'Play'} ${ic.arrow()}</span>
+            </button>`; }).join('')}
         </div>
       </div>`;
     stage.querySelectorAll('.game-card').forEach(c => c.onclick = () => {

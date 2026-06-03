@@ -412,7 +412,9 @@
     st.textContent = `
       #qaScrim{position:fixed;inset:0;z-index:58;background:rgba(6,30,52,.28);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .3s}
       #qaScrim.on{opacity:1;pointer-events:auto}
-      #qaFab{position:fixed;left:24px;bottom:30px;z-index:61;width:60px;height:60px}
+      #qaFab{position:fixed;left:24px;bottom:30px;z-index:61;width:60px;height:60px;transition:opacity .3s,transform .3s}
+      body.app-active #qaFab{opacity:0;pointer-events:none;transform:translateY(18px)}
+      body.app-active #qaScrim{display:none}
       .qa-trigger{position:absolute;left:0;bottom:0;width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;z-index:3;
         background:radial-gradient(circle at 34% 28%,#38bdf8,#0369a1);color:#fff;box-shadow:0 12px 30px rgba(3,105,161,.5),inset 0 1px 0 rgba(255,255,255,.4);
         display:grid;place-items:center;transition:transform .35s cubic-bezier(.2,.8,.3,1.4)}
