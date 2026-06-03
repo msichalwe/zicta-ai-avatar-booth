@@ -14,10 +14,23 @@ window.buildArcade = function (app, ctx) {
       <div class="sp"></div>
       <button class="close-app" title="Close (Esc)">${ic.x()}</button>
     </div>
-    <div class="app-body"><div class="arcade-wrap" id="arcadeStage"></div></div>`;
+    <div class="app-body arc-body">
+      <div class="arc-bg" id="arcBg" aria-hidden="true"><div class="aur"></div></div>
+      <div class="arcade-wrap" id="arcadeStage"></div>
+    </div>`;
 
   const stage = app.querySelector('#arcadeStage');
   app.querySelector('.close-app').onclick = ctx.close;
+  // floating orbs for the dynamic background
+  if (!reduce) {
+    const bg = app.querySelector('#arcBg');
+    for (let k = 0; k < 9; k++) {
+      const o = document.createElement('span'); o.className = 'orb';
+      const s = 26 + Math.random() * 80;
+      o.style.cssText = `left:${(Math.random()*100).toFixed(1)}%;width:${s}px;height:${s}px;animation-duration:${(13+Math.random()*12).toFixed(1)}s;animation-delay:${(-Math.random()*22).toFixed(1)}s`;
+      bg.appendChild(o);
+    }
+  }
   let cleanup = null;            // per-game teardown (timers etc.)
 
   /* ---------- game catalogue ---------- */
@@ -53,7 +66,7 @@ window.buildArcade = function (app, ctx) {
         <h2 class="arcade-h">Choose a game</h2>
         <p class="arcade-sub">${GAMES.length} quick games — sharpen your security, law &amp; tech instincts.</p>
         <div class="game-grid">
-          ${GAMES.map(g => { const b = (window.TideScore && window.TideScore.best(g.key)); return `
+          ${GAMES.map(g => { const TS = window.TideScore; const b = TS ? (TS.best('game:' + g.key) ?? TS.best(g.key)) : null; return `
             <button class="game-card" data-g="${g.key}">
               ${b != null ? `<span class="game-best">★ ${b}%</span>` : ''}
               <div class="game-ico" style="background:${g.grad}">${g.ico}</div>
@@ -64,8 +77,16 @@ window.buildArcade = function (app, ctx) {
             </button>`; }).join('')}
         </div>
       </div>`;
-    stage.querySelectorAll('.game-card').forEach(c => c.onclick = () => {
-      const g = GAMES.find(x => x.key === c.dataset.g); if (g) g.run();
+    stage.querySelectorAll('.game-card').forEach(c => {
+      c.onclick = () => { const g = GAMES.find(x => x.key === c.dataset.g); if (g) g.run(); };
+      if (!reduce) {                                   // pointer-reactive 3D tilt
+        c.addEventListener('pointermove', e => {
+          const r = c.getBoundingClientRect();
+          const px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5;
+          c.style.transform = `rotateY(${(px * 14).toFixed(1)}deg) rotateX(${(-py * 14).toFixed(1)}deg) translateY(-6px)`;
+        });
+        c.addEventListener('pointerleave', () => { c.style.transform = ''; });
+      }
     });
   }
 
@@ -133,6 +154,7 @@ window.buildArcade = function (app, ctx) {
         if (good) { score++; streak++; best = Math.max(best, streak); card.querySelector('#msgCard').classList.add('ok'); }
         else { streak = 0; card.querySelector('#msgCard').classList.add('no'); }
         card.querySelector('#strk').textContent = streak;
+        if (good) { const se = card.querySelector('.game-streak'); se.classList.remove('pop'); void se.offsetWidth; se.classList.add('pop'); }
         fb.innerHTML = `<div class="fb-in ${good ? 'good' : 'bad'}"><b>${good ? 'Nice! ' : 'Watch out. '}</b>${g.why(m)}
           <button class="btn fb-next">${i === g.data.length - 1 ? 'Results' : 'Next'} ${ic.arrow()}</button></div>`;
         requestAnimationFrame(() => fb.querySelector('.fb-in').classList.add('show'));

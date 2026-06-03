@@ -226,6 +226,33 @@
 .game-best { position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg,#fbbf24,#f59e0b); color: #4a2c00;
   font-family:'Sora',sans-serif; font-weight: 800; font-size: 12px; padding: 4px 10px; border-radius: 999px; box-shadow: var(--sh-sm); z-index: 2; }
 
+/* ===== arcade: dynamic background + 3D + indicators ===== */
+.arc-body { position: relative; }
+.arc-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: linear-gradient(165deg, #e8f6ff 0%, #dfeeff 55%, #efe9ff 100%); }
+.arc-bg .aur { position: absolute; inset: -25%;
+  background:
+    radial-gradient(38% 38% at 22% 30%, rgba(56,189,248,.55), transparent 60%),
+    radial-gradient(42% 42% at 80% 22%, rgba(167,139,250,.5), transparent 60%),
+    radial-gradient(46% 46% at 62% 92%, rgba(45,212,191,.5), transparent 60%),
+    radial-gradient(40% 40% at 10% 85%, rgba(251,191,36,.32), transparent 60%);
+  filter: blur(46px); animation: arcAur 20s ease-in-out infinite; }
+@keyframes arcAur { 0%,100% { transform: translate(0,0) scale(1) } 50% { transform: translate(4%,-3%) scale(1.14) } }
+.arc-bg .orb { position: absolute; border-radius: 50%; bottom: -80px;
+  background: radial-gradient(circle at 34% 30%, rgba(255,255,255,.55), rgba(56,189,248,.12)); animation: arcFloat linear infinite; }
+@keyframes arcFloat { 0% { transform: translateY(0) scale(.6); opacity: 0 } 12% { opacity: .6 } 88% { opacity: .5 } 100% { transform: translateY(-120vh) scale(1); opacity: 0 } }
+.arcade-wrap { position: relative; z-index: 1; }
+/* glassier menu cards so the aurora shows through */
+.game-grid { perspective: 1100px; }
+.game-card { transform-style: preserve-3d; transition: transform .18s ease, box-shadow .3s; will-change: transform;
+  background: rgba(255,255,255,.5); backdrop-filter: blur(10px) saturate(150%); -webkit-backdrop-filter: blur(10px) saturate(150%); }
+.game-card .game-ico { transform: translateZ(34px); }
+.game-card h3, .game-card .game-best { transform: translateZ(20px); }
+.game-card .game-play { transform: translateZ(14px); }
+/* streak pop */
+.game-streak.pop { animation: strkPop .42s; display: inline-block; }
+@keyframes strkPop { 0% { transform: scale(1) } 40% { transform: scale(1.45) } 100% { transform: scale(1) } }
+
 .game-stage { width: min(100%, 640px); }
 .game-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13px; font-weight: 700; color: var(--ink-soft); }
 .game-name { color: var(--ocean-2); }

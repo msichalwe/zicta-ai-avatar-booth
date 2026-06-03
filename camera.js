@@ -63,6 +63,7 @@ window.buildCamera = function (app, ctx) {
             <div class="gallery" id="gallery"><span class="empty">No photos yet — say cheese 🐠</span></div>
           </div>
           <div class="cam-actions">
+            <button class="btn ghost" id="funBtn" aria-pressed="false">✨ Face reactions: Off</button>
             <button class="shutter" id="shutter" disabled>${shutIco()} Take photo</button>
             <button class="btn ghost" id="download" disabled>Download last shot</button>
           </div>
@@ -83,6 +84,9 @@ window.buildCamera = function (app, ctx) {
 
   let stream = null, fxId = 'none', bgId = 'live', shots = [], lastData = null, hasCam = false;
   let raf = 0, disposed = false, seg = null, segReady = false, segLoading = false, segBusy = false;
+  // face reactions (playful emoji props on detected faces — works for groups)
+  let faceOn = false, faceapi = null, faceReady = false, faceLoading = false, faceDets = [], lastDetT = 0, mapInfo = { mode: 'raw', sx: 0, sy: 0, sw: 1, sh: 1 };
+  const EMO = { happy: '😄', surprised: '😮', sad: '😢', angry: '😠', fearful: '😨', disgusted: '🤢', neutral: '😎' };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- filter chips ---------- */
@@ -121,6 +125,59 @@ window.buildCamera = function (app, ctx) {
     t.style.cssText = 'position:absolute;left:50%;top:18px;transform:translateX(-50%);background:rgba(6,40,61,.92);color:#fff;font:600 13px Manrope,sans-serif;padding:9px 16px;border-radius:10px;z-index:9;box-shadow:0 8px 20px rgba(0,0,0,.3)';
     app.querySelector('.cam-frame').appendChild(t); setTimeout(() => t.remove(), 2600);
   }
+
+  /* ---------- Face reactions (face-api.js, lazy) — playful emoji props, group-aware ---------- */
+  async function ensureFace() {
+    if (faceReady) return true;
+    if (faceLoading) { while (faceLoading) await new Promise(r => setTimeout(r, 100)); return faceReady; }
+    faceLoading = true;
+    try {
+      if (!window.faceapi) await loadScript('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js');
+      faceapi = window.faceapi;
+      const base = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(base);
+      await faceapi.nets.faceExpressionNet.loadFromUri(base);
+      faceReady = true;
+    } catch (e) { console.warn('face-api unavailable:', e); faceReady = false; }
+    faceLoading = false; return faceReady;
+  }
+  async function detectFaces() {
+    if (!faceReady || !hasCam || !video.videoWidth) return;
+    try {
+      const opts = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 });
+      const res = await faceapi.detectAllFaces(video, opts).withFaceExpressions();
+      faceDets = res.map(r => ({ box: r.detection.box, exp: topExp(r.expressions) }));
+    } catch (e) { /* skip a frame */ }
+  }
+  function topExp(ex) { let k = 'neutral', v = 0; for (const key in ex) { if (ex[key] > v) { v = ex[key]; k = key; } } return k; }
+  function mapBox(b) {
+    if (mapInfo.mode === 'seg') {
+      const fx = W / (video.videoWidth || W), fy = H / (video.videoHeight || H);
+      return { cx: W - (b.x + b.width / 2) * fx, y: b.y * fy, w: b.width * fx };
+    }
+    const sc = W / mapInfo.sw, scY = H / mapInfo.sh;
+    return { cx: W - (b.x - mapInfo.sx + b.width / 2) * sc, y: (b.y - mapInfo.sy) * scY, w: b.width * sc };
+  }
+  function drawFaces(c) {
+    if (!faceOn || !faceDets.length) return;
+    for (const d of faceDets) {
+      const p = mapBox(d.box); const size = Math.max(34, p.w * 0.7);
+      c.save(); c.font = size + 'px serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(EMO[d.exp] || '😎', p.cx, p.y - size * 0.3);
+      c.restore();
+    }
+  }
+  app.querySelector('#funBtn').onclick = async (e) => {
+    const btn = e.currentTarget;
+    if (!faceOn) {
+      btn.textContent = '✨ Loading…';
+      const ok = await ensureFace();
+      if (!ok) { btn.textContent = '✨ Face reactions: Off'; toast('Reactions need internet — try again.'); return; }
+      faceOn = true; btn.textContent = '✨ Face reactions: On'; btn.classList.add('on');
+    } else {
+      faceOn = false; faceDets = []; btn.textContent = '✨ Face reactions: Off'; btn.classList.remove('on');
+    }
+  };
 
   /* ---------- MediaPipe Selfie Segmentation (lazy) ---------- */
   function loadScript(src) {
@@ -185,6 +242,7 @@ window.buildCamera = function (app, ctx) {
   /* ---------- segmentation composite ---------- */
   function onSegResults(res) {
     const c = lctx;
+    mapInfo.mode = 'seg';
     c.save();
     c.clearRect(0, 0, W, H);
     // mirror everything for a natural selfie
@@ -200,6 +258,7 @@ window.buildCamera = function (app, ctx) {
     else { paintBooth(bgId, performance.now()); c.drawImage(bgCanvas, 0, 0, W, H); }
     c.restore();
     c.globalCompositeOperation = 'source-over';
+    drawFaces(c);
     segBusy = false;
   }
 
@@ -208,6 +267,7 @@ window.buildCamera = function (app, ctx) {
     if (disposed) return;
     raf = requestAnimationFrame(frame);
     if (!hasCam || !video.videoWidth) return;
+    if (faceOn && faceReady && performance.now() - lastDetT > 220) { lastDetT = performance.now(); detectFaces(); }
     const useSeg = segReady && bgId !== 'live';
     if (useSeg) {
       if (!segBusy) { segBusy = true; seg.send({ image: video }).catch(() => { segBusy = false; }); }
@@ -222,6 +282,8 @@ window.buildCamera = function (app, ctx) {
     else { sw = video.videoWidth; sh = sw / fr; sx = 0; sy = (video.videoHeight - sh) / 2; }
     c.drawImage(video, sx, sy, sw, sh, 0, 0, W, H);
     c.restore(); c.filter = 'none';
+    mapInfo = { mode: 'raw', sx, sy, sw, sh };
+    drawFaces(c);
   }
 
   /* ---------- camera start ---------- */
