@@ -273,7 +273,8 @@
     knowledge: window.buildKnowledge,
     ai: window.buildAI,
     arcade: window.buildArcade,
-    zictabot: window.buildZictabot
+    zictabot: window.buildZictabot,
+    map: window.buildMap
   };
   const closers = {};
   let current = null;
