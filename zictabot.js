@@ -60,10 +60,9 @@ window.buildZictabot = function (app, ctx) {
       .zb-hidden{display:none!important}
       /* ---- bot landing (slider + bubbles + info + Talk Now) ---- */
       .zb-land{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;overflow:hidden;background:#0a1626}
-      .zb-slider{position:absolute;inset:0;z-index:0}
-      .zb-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.1s ease;transform:scale(1.04)}
-      .zb-slide.on{opacity:1;animation:zbken 7s ease-out forwards}
-      @keyframes zbken{from{transform:scale(1.04)}to{transform:scale(1.14)}}
+      .zb-slider{position:absolute;inset:0;z-index:0;background:#0a1626}
+      .zb-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1s ease;will-change:opacity}
+      .zb-slide.on{opacity:1}
       .zb-land::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(120deg,rgba(6,18,34,.82),rgba(6,18,34,.5) 55%,rgba(10,40,70,.7))}
       .zb-land-in{position:relative;z-index:2;margin:auto;text-align:center;padding:clamp(20px,4vw,48px);max-width:760px;color:#fff}
       .zb-eyebrow{font-family:'Sora',sans-serif;font-weight:800;letter-spacing:.3em;font-size:12px;text-transform:uppercase;color:#5eead4}
@@ -159,7 +158,13 @@ window.buildZictabot = function (app, ctx) {
   function showOver(t, m, showAgain, spinning){ over.classList.remove('zb-hidden'); title.textContent=t; msg.innerHTML=m||'';
     spin.classList.toggle('zb-hidden', !spinning); again.classList.toggle('zb-hidden', !showAgain); }
   function hideOver(){ over.classList.add('zb-hidden'); }
-  function setMic(s){ mic.className='zb-mic'+(s&&s!=='idle'?' '+s:''); mic.textContent = s==='muted'?'🔇':s==='listening'?'●':s==='speaking'?'♪':'🎤'; }
+  const MICSVG = {
+    idle:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+    listening:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+    speaking:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><g stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M5 10v4M9 7v10M13 9v6M17 6v12M21 10v4"/></g></svg>',
+    muted:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M4 4l16 16" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>'
+  };
+  function setMic(s){ mic.className='zb-mic'+(s&&s!=='idle'?' '+s:''); mic.innerHTML = MICSVG[s] || MICSVG.idle; }
 
   // ----- intro landing: slider + bubbles + info + Talk Now (opens the live bot) -----
   let landingEl = null;
@@ -181,19 +186,21 @@ window.buildZictabot = function (app, ctx) {
           <span class="zb-bub">“Is this link safe?”</span>
           <span class="zb-bub">“What does ZICTA do?”</span>
         </div>
-        <button class="zb-talk" id="zbTalkNow">🎙️ Talk now</button>
+        <button class="zb-talk" id="zbTalkNow"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="#04231b"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="#04231b" stroke-width="2" stroke-linecap="round"/></svg> Talk now</button>
         <div class="zb-dots" id="zbDots">${SLIDES.map((_, i) => `<b class="${i === 0 ? 'on' : ''}"></b>`).join('')}</div>
       </div>
       <div class="zb-mini">Live video chat · about a minute per session</div>`;
     app.querySelector('.zb-stage').appendChild(landingEl);
-    // auto-advancing slider
+    // preload images so slides don't pop in / glitch on first show
+    SLIDES.forEach(s => { const im = new Image(); im.src = s; });
+    // smooth auto-advancing slider (clean crossfade, settles before first advance)
     const slides = [...landingEl.querySelectorAll('.zb-slide')], dots = [...landingEl.querySelectorAll('#zbDots b')];
     let si = 0;
     if (!reduce) landingSlider = setInterval(() => {
       si = (si + 1) % slides.length;
       slides.forEach((s, i) => s.classList.toggle('on', i === si));
       dots.forEach((d, i) => d.classList.toggle('on', i === si));
-    }, 3600);
+    }, 5000);
     landingEl.querySelector('#zbTalkNow').onclick = () => {
       clearInterval(landingSlider);
       landingEl.remove(); landingEl = null;
