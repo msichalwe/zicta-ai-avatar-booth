@@ -341,6 +341,18 @@ body { cursor: default; user-select: none; }
 .tile.tile-photo .ico { background: rgba(255,255,255,.2); backdrop-filter: blur(6px); }
 .tile.tile-photo .go { background: rgba(255,255,255,.28); }
 
+/* modern map card — dark basemap + teal glow + pulsing location pin */
+.tile.tile-map::after { background:
+  radial-gradient(80% 120% at 14% 110%, rgba(34,211,238,.42), transparent 55%),
+  radial-gradient(70% 100% at 95% 0%, rgba(99,102,241,.35), transparent 55%),
+  linear-gradient(120deg, rgba(6,22,40,.55), rgba(6,22,40,.30) 55%, rgba(6,22,40,.72)); }
+.tile.tile-map .map-pin { position:absolute; right:14%; top:34%; z-index:1; }
+.tile.tile-map .map-pin i { display:block; width:14px; height:14px; border-radius:50%;
+  background:#22d3ee; box-shadow:0 0 0 4px rgba(34,211,238,.35), 0 0 16px rgba(34,211,238,.9); }
+.tile.tile-map .map-pin::before { content:""; position:absolute; left:50%; top:50%; width:14px; height:14px;
+  transform:translate(-50%,-50%); border-radius:50%; border:2px solid rgba(34,211,238,.7); animation:mapping 2.4s ease-out infinite; }
+@keyframes mapping { 0%{width:14px;height:14px;opacity:.8} 100%{width:64px;height:64px;opacity:0} }
+
 /* ---- Clock widget ---- */
 .w-clock .time { font-size: 62px; font-weight: 700; line-height: .92; padding: 6px 18px 2px; font-variant-numeric: tabular-nums; }
 .w-clock .time .sec { font-size: 26px; color: var(--accent-2); vertical-align: super; }
