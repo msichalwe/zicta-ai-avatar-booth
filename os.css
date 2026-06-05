@@ -328,6 +328,19 @@ body { cursor: default; user-select: none; }
 }
 .tile:hover .go { opacity: 1; transform: none; }
 
+/* photo-backed tiles — real imagery with a readable gradient scrim, white text */
+.tile.tile-photo { overflow: hidden; }
+.tile.tile-photo::before { content:""; position:absolute; inset:0; z-index:0;
+  background-image: var(--img); background-size: cover; background-position: center;
+  transform: scale(1.02); transition: transform .6s var(--ease); }
+.tile.tile-photo:hover::before { transform: scale(1.1); }
+.tile.tile-photo::after { content:""; position:absolute; inset:0; z-index:0;
+  background: linear-gradient(150deg, rgba(8,30,52,.40) 0%, rgba(8,30,52,.62) 60%, rgba(6,22,40,.86) 100%); }
+.tile.tile-photo h3 { color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.5); }
+.tile.tile-photo p  { color:rgba(255,255,255,.9); text-shadow:0 1px 8px rgba(0,0,0,.5); }
+.tile.tile-photo .ico { background: rgba(255,255,255,.2); backdrop-filter: blur(6px); }
+.tile.tile-photo .go { background: rgba(255,255,255,.28); }
+
 /* ---- Clock widget ---- */
 .w-clock .time { font-size: 62px; font-weight: 700; line-height: .92; padding: 6px 18px 2px; font-variant-numeric: tabular-nums; }
 .w-clock .time .sec { font-size: 26px; color: var(--accent-2); vertical-align: super; }

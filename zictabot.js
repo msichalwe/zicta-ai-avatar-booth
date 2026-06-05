@@ -5,6 +5,7 @@
    ============================================================ */
 window.buildZictabot = function (app, ctx) {
   const SDK_URL = "https://cdn.jsdelivr.net/npm/@heygen/liveavatar-web-sdk@0.0.18/+esm";
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // one-time styles for this app
   if (!document.getElementById('zb-style')) {
@@ -57,6 +58,35 @@ window.buildZictabot = function (app, ctx) {
       .zb-over code{background:#13294a;padding:2px 7px;border-radius:5px}
       .zb-btn{padding:16px 38px;border-radius:999px;border:none;cursor:pointer;font-family:'Sora',sans-serif;font-weight:700;font-size:18px;color:#06241b;background:#18c29c;box-shadow:0 12px 30px rgba(24,194,156,.45)}
       .zb-hidden{display:none!important}
+      /* ---- bot landing (slider + bubbles + info + Talk Now) ---- */
+      .zb-land{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;overflow:hidden;background:#0a1626}
+      .zb-slider{position:absolute;inset:0;z-index:0}
+      .zb-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.1s ease;transform:scale(1.04)}
+      .zb-slide.on{opacity:1;animation:zbken 7s ease-out forwards}
+      @keyframes zbken{from{transform:scale(1.04)}to{transform:scale(1.14)}}
+      .zb-land::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(120deg,rgba(6,18,34,.82),rgba(6,18,34,.5) 55%,rgba(10,40,70,.7))}
+      .zb-land-in{position:relative;z-index:2;margin:auto;text-align:center;padding:clamp(20px,4vw,48px);max-width:760px;color:#fff}
+      .zb-eyebrow{font-family:'Sora',sans-serif;font-weight:800;letter-spacing:.3em;font-size:12px;text-transform:uppercase;color:#5eead4}
+      .zb-h1{font-family:'Sora',sans-serif;font-weight:800;letter-spacing:-.02em;line-height:1.04;margin:12px 0 10px;
+        font-size:clamp(34px,5.6vw,68px)}
+      .zb-h1 .g{background:linear-gradient(120deg,#5eead4,#38bdf8,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+      .zb-lead{font-size:clamp(15px,1.9vw,21px);line-height:1.5;color:rgba(255,255,255,.85);max-width:42ch;margin:0 auto clamp(18px,2.4vw,28px)}
+      .zb-bubbles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:clamp(20px,2.6vw,30px)}
+      .zb-bub{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);
+        padding:10px 16px;border-radius:999px;font-family:'Manrope',sans-serif;font-weight:600;font-size:clamp(13px,1.5vw,16px);
+        color:#eaf4ff;animation:zbfloat 5s ease-in-out infinite}
+      .zb-bub:nth-child(2){animation-delay:1s}.zb-bub:nth-child(3){animation-delay:2s}.zb-bub:nth-child(4){animation-delay:1.5s}
+      @keyframes zbfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+      .zb-talk{font-family:'Sora',sans-serif;font-weight:800;font-size:clamp(18px,2vw,24px);border:none;cursor:pointer;color:#04231b;
+        padding:clamp(16px,1.8vw,22px) clamp(40px,4.4vw,68px);border-radius:999px;display:inline-flex;align-items:center;gap:12px;
+        background:linear-gradient(135deg,#5eead4,#18c29c);box-shadow:0 16px 40px rgba(24,194,156,.5);transition:transform .2s,box-shadow .2s;
+        animation:zbpulse2 2.4s ease-in-out infinite}
+      .zb-talk:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 22px 52px rgba(24,194,156,.62)}
+      @keyframes zbpulse2{0%,100%{box-shadow:0 16px 40px rgba(24,194,156,.5)}50%{box-shadow:0 16px 54px rgba(24,194,156,.8)}}
+      .zb-dots{display:flex;gap:7px;justify-content:center;margin-top:18px}
+      .zb-dots b{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.35);transition:.3s}
+      .zb-dots b.on{background:#5eead4;width:22px;border-radius:5px}
+      .zb-mini{position:absolute;bottom:16px;left:0;right:0;z-index:2;text-align:center;color:rgba(255,255,255,.6);font-size:12.5px;font-family:'Manrope',sans-serif}
     `;
     document.head.appendChild(st);
   }
@@ -121,7 +151,7 @@ window.buildZictabot = function (app, ctx) {
 
   let SDK = null, cfg = {}, session = null, ptt = false, ending = false, closing = false, goodbyeLive = false;
   let keepAlive = null, idleWatch = null, timerInt = null, closeSafety = null, farewellTimer = null, farewellPending = false;
-  let secondsLeft = 0, lastActivity = Date.now(), muted = false, holding = false, disposed = false;
+  let secondsLeft = 0, lastActivity = Date.now(), muted = false, holding = false, disposed = false, landingSlider = null;
   const MAXS_DEFAULT = 90, EXTEND = 20, IDLE_STOP_MS = 60000;
   const FAREWELL = /\b(goodbye|good bye|bye+|see you|see ya|that'?s all|that'?s it|i'?m done|we'?re done|nothing else|thank you so much|have a (good|nice|great) (day|one)|take care)\b/i;
   const bump = () => { lastActivity = Date.now(); };
@@ -131,14 +161,54 @@ window.buildZictabot = function (app, ctx) {
   function hideOver(){ over.classList.add('zb-hidden'); }
   function setMic(s){ mic.className='zb-mic'+(s&&s!=='idle'?' '+s:''); mic.textContent = s==='muted'?'🔇':s==='listening'?'●':s==='speaking'?'♪':'🎤'; }
 
-  (async function start(){
+  // ----- intro landing: slider + bubbles + info + Talk Now (opens the live bot) -----
+  let landingEl = null;
+  function landing() {
+    const name = botName();
+    const SLIDES = ['assets/cards/people1.jpg', 'assets/cards/people2.jpg', 'assets/cards/phone.jpg', 'assets/cards/city.jpg'];
+    landingEl = document.createElement('div'); landingEl.className = 'zb-land';
+    landingEl.innerHTML = `
+      <div class="zb-slider" id="zbSlider">
+        ${SLIDES.map((s, i) => `<div class="zb-slide${i === 0 ? ' on' : ''}" style="background-image:url('${s}')"></div>`).join('')}
+      </div>
+      <div class="zb-land-in">
+        <div class="zb-eyebrow">★ ZICTA · AI Host ★</div>
+        <h1 class="zb-h1">Meet <span class="g">${name}</span></h1>
+        <p class="zb-lead">Your friendly AI host — ask anything about ZICTA, staying safe online, SIM registration, the .zm domain and more. Out loud, face to face.</p>
+        <div class="zb-bubbles">
+          <span class="zb-bub">“How do I register my SIM?”</span>
+          <span class="zb-bub">“Report a scam”</span>
+          <span class="zb-bub">“Is this link safe?”</span>
+          <span class="zb-bub">“What does ZICTA do?”</span>
+        </div>
+        <button class="zb-talk" id="zbTalkNow">🎙️ Talk now</button>
+        <div class="zb-dots" id="zbDots">${SLIDES.map((_, i) => `<b class="${i === 0 ? 'on' : ''}"></b>`).join('')}</div>
+      </div>
+      <div class="zb-mini">Live video chat · about a minute per session</div>`;
+    app.querySelector('.zb-stage').appendChild(landingEl);
+    // auto-advancing slider
+    const slides = [...landingEl.querySelectorAll('.zb-slide')], dots = [...landingEl.querySelectorAll('#zbDots b')];
+    let si = 0;
+    if (!reduce) landingSlider = setInterval(() => {
+      si = (si + 1) % slides.length;
+      slides.forEach((s, i) => s.classList.toggle('on', i === si));
+      dots.forEach((d, i) => d.classList.toggle('on', i === si));
+    }, 3600);
+    landingEl.querySelector('#zbTalkNow').onclick = () => {
+      clearInterval(landingSlider);
+      landingEl.remove(); landingEl = null;
+      connect();
+    };
+  }
+
+  async function connect(){
     try { cfg = await (await fetch('/api/config')).json(); } catch {}
     if (disposed) return;                       // closed before we even got config
     if (!cfg.hasLiveAvatar){
       showOver('Add a LiveAvatar key', 'Set <code>liveavatarApiKey</code> in <code>config.json</code> on the server, then restart.', false, false);
       return;
     }
-    showOver('Connecting to Zictabot…', 'Setting up your conversation', false, true);
+    showOver('Connecting to ' + botName() + '…', 'Setting up your conversation', false, true);
     let tok;
     try { tok = await (await fetch('/api/la-token',{method:'POST'})).json(); if(!tok.sessionToken) throw new Error(tok.error||'no token'); }
     catch(e){ return showOver('Could not connect', String(e.message||e), false, false); }
@@ -159,8 +229,12 @@ window.buildZictabot = function (app, ctx) {
       await session.start();
       if (disposed) { stopSession(); return; } // closed mid-handshake → end the session we just started
       keepAlive = setInterval(()=>{ try{ session && session.keepAlive(); }catch{} }, 150000);
-    } catch(e){ showOver('Could not start Zictabot', String(e.message||e), false, false); }
-  })();
+    } catch(e){ showOver('Could not start ' + botName(), String(e.message||e), false, false); }
+  }
+
+  // show the landing first; "Talk now" triggers connect()
+  hideOver();
+  landing();
 
   // Hard stop: release the mic, end the live session, drop the reference. Safe to call repeatedly.
   function stopSession(){
@@ -245,6 +319,7 @@ window.buildZictabot = function (app, ctx) {
   return { onClose: () => {
     if (disposed) return;        // idempotent — closeApp may fire this more than once
     disposed = true; ending = true;   // block any late finish()/onEnded() from re-opening anything
+    clearInterval(landingSlider);
     cleanup();                   // clears keepAlive ping, idle watch, timers; detaches video
     stopSession();               // releases mic + ends the live avatar so it stops consuming tokens
   } };
