@@ -4,15 +4,10 @@
    buildMap(app, ctx) -> { onClose }
    ============================================================ */
 window.buildMap = function (app, ctx) {
-  // Map source. The ZNPCS addressing app runs on :8081 of the SAME host the
-  // kiosk is reached on, so the URL auto-adapts:
-  //   internal network → https://192.168.0.137:8081/map
-  //   outside network  → https://196.13.104.241:8081/map
-  // (override with window.ZICTA_MAP_URL if it ever moves.)
-  const host = location.hostname;
-  const isLocal = !host || /^(localhost|127\.|0\.0\.0\.0|::1)/.test(host);
-  const MAP_HOST = isLocal ? '192.168.0.137' : host;   // dev fallback → internal IP
-  const MAP_URL = window.ZICTA_MAP_URL || ('https://' + MAP_HOST + ':8081/map');
+  // The map is reverse-proxied by our own server at same-origin "/map", so it
+  // loads on whatever host:port the kiosk is reached on (internal OR external)
+  // without needing port 8081 exposed. (Override with window.ZICTA_MAP_URL.)
+  const MAP_URL = window.ZICTA_MAP_URL || '/map';
 
   if (!document.getElementById('mapStyle')) {
     const st = document.createElement('style'); st.id = 'mapStyle';

@@ -322,8 +322,33 @@ function serveStatic(req, res) {
   });
 }
 
+// ---- reverse-proxy the ZNPCS Digital Address Map (so the iframe rides on OUR
+//      origin/port and never needs :8081 exposed externally). Forwards the map
+//      page + its Next.js assets to the local addressing app on 127.0.0.1:8081.
+const ZNPS_ORIGIN = (config.znpsMapOrigin || "https://127.0.0.1:8081");
+const ZNPS_PREFIXES = ["/map", "/_next/", "/zitf-map/", "/znps-api/"];
+function isMapProxy(url) {
+  const p = url.split("?")[0];
+  return p === "/map" || ZNPS_PREFIXES.some(pre => pre.endsWith("/") ? p.startsWith(pre) : p === pre);
+}
+function proxyMap(req, res) {
+  const https = require("https");
+  const target = new URL(ZNPS_ORIGIN + req.url);
+  const opts = {
+    hostname: target.hostname, port: target.port || 443, path: target.pathname + target.search,
+    method: req.method, headers: { ...req.headers, host: target.host }, rejectUnauthorized: false,
+  };
+  const preq = https.request(opts, (pres) => {
+    res.writeHead(pres.statusCode || 502, pres.headers);
+    pres.pipe(res);
+  });
+  preq.on("error", (e) => { console.error("map proxy error:", e.message); if (!res.headersSent) sendJson(res, 502, { error: "map service unreachable" }); });
+  req.pipe(preq);
+}
+
 const requestHandler = async (req, res) => {
   try {
+    if (isMapProxy(req.url)) return proxyMap(req, res);
     if (req.url.startsWith("/api/config")) return handleConfig(res);
     if (req.url.startsWith("/api/chat") && req.method === "POST") return handleChat(req, res);
     if (req.url.startsWith("/api/tts") && req.method === "POST") return handleTts(req, res);
