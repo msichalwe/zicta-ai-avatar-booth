@@ -17,10 +17,10 @@ window.TIDE_DATA = {
 
   /* ---- Photo slideshow (full-bleed images + overlay captions) ---- */
   photos: [
-    { img: "assets/orbit/o5.jpg",      tag: "CYBER SAFETY",   title: "Stay safe & scam-smart online" },
-    { img: "assets/cards/phone.jpg",   tag: "CONNECTIVITY",   title: "Nationwide 4G & 5G coverage" },
-    { img: "assets/cards/people2.jpg", tag: "ACCESS FOR ALL", title: "Bridging the digital divide" },
-    { img: "assets/cards/people1.jpg", tag: "DIGITAL SKILLS", title: "Empowering communities with ICT" }
+    { img: "assets/zicta/z11.jpg", tag: "CYBER SAFETY",   title: "Stay safe & scam-smart online" },
+    { img: "assets/zicta/z2.jpg",  tag: "CONNECTIVITY",   title: "Nationwide 4G & 5G coverage" },
+    { img: "assets/zicta/z6.jpg",  tag: "ACCESS FOR ALL", title: "Bridging the digital divide" },
+    { img: "assets/zicta/z1.jpg",  tag: "DIGITAL SKILLS", title: "Empowering communities with ICT" }
   ],
 
   /* ---- "Did you know" ticker facts (cyber + ZICTA) ---- */

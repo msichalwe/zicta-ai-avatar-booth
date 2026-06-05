@@ -165,7 +165,7 @@ window.buildZictabot = function (app, ctx) {
   let landingEl = null;
   function landing() {
     const name = botName();
-    const SLIDES = ['assets/cards/people1.jpg', 'assets/cards/people2.jpg', 'assets/cards/phone.jpg', 'assets/cards/city.jpg'];
+    const SLIDES = ['assets/zicta/z1.jpg', 'assets/zicta/z6.jpg', 'assets/zicta/z2.jpg', 'assets/zicta/z11.jpg'];
     landingEl = document.createElement('div'); landingEl.className = 'zb-land';
     landingEl.innerHTML = `
       <div class="zb-slider" id="zbSlider">
