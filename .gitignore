@@ -1,4 +1,5 @@
 node_modules/
 config.json
+usage.json
 *.log
 .DS_Store

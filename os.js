@@ -19,6 +19,25 @@
     }
   };
 
+  /* ---------- usage tracking (feeds the /admin operations dashboard) ---------- */
+  const TIDE_SID = (() => {
+    try {
+      let s = sessionStorage.getItem('tide.sid');
+      if (!s) { s = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem('tide.sid', s); }
+      return s;
+    } catch (e) { return 'anon'; }
+  })();
+  window.TideTrack = function (app, type, extra) {
+    try {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(Object.assign({ app, type: type || 'open', sid: TIDE_SID }, extra || {})),
+        keepalive: true
+      }).catch(() => {});
+    } catch (e) {}
+  };
+
   /* ---------- shared tiny icon set ---------- */
   window.TideIcons = {
     sun:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.4" fill="#fbbf24"/><g stroke="#fbbf24" stroke-width="1.7" stroke-linecap="round"><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3 19 19M19 5l-1.7 1.7M6.7 17.3 5 19"/></g></svg>',
@@ -70,13 +89,14 @@
 
   /* ======================= CLOCK ======================= */
   function clock() {
-    const big = $('#bigClock'), date = $('#bigDate'), mini = $('#menuClock');
+    const big = $('#bigClock'), date = $('#bigDate'), mini = $('#menuClock'), miniDate = $('#menuDate');
     function tick() {
       const n = new Date();
       let h = n.getHours(), m = n.getMinutes(), s = n.getSeconds();
       const hh = String(h).padStart(2, '0'), mm = String(m).padStart(2, '0'), ss = String(s).padStart(2, '0');
       if (big) big.innerHTML = `${hh}:${mm}<span class="sec">${ss}</span>`;
       if (mini) mini.textContent = `${hh}:${mm}`;
+      if (miniDate) miniDate.textContent = n.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
       if (date) date.textContent = n.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
       // also any open slider time
       const st = $('#slideTime'); if (st) st.innerHTML = `${hh}:${mm}<span style="font-size:.5em;color:var(--accent-2)">${ss}</span>`;
@@ -234,6 +254,9 @@
       const handle = w.querySelector('.grab') || w;
       handle.addEventListener('pointerdown', e => {
         if (w.classList.contains('tile') && !w.querySelector('.grab')) return;
+        // On phones the desktop is a scrollable column; dragging would detach a
+        // card (position:absolute) and break the layout — disable it there.
+        if (window.matchMedia && window.matchMedia('(max-width: 600px)').matches) return;
         active = w; w.classList.add('dragging');
         const r = w.getBoundingClientRect();
         const pr = w.parentElement.getBoundingClientRect();
@@ -295,12 +318,14 @@
     }
     app.classList.add('open');
     requestAnimationFrame(() => app.classList.add('anim-in'));
-    current = { name, app };
+    current = { name, app, openedAt: Date.now() };
     document.body.classList.add('app-active');
+    window.TideTrack(name, 'open');
   }
   function closeApp() {
     if (!current) return;
-    const { name, app } = current;
+    const { name, app, openedAt } = current;
+    window.TideTrack(name, 'close', { dur: Date.now() - (openedAt || Date.now()) });
     if (closers[name]) try { closers[name](); } catch (e) {}
     app.classList.remove('anim-in'); app.classList.add('anim-out');
     setTimeout(() => { app.remove(); }, reduce ? 20 : 420);
@@ -322,60 +347,6 @@
       window.dispatchEvent(new CustomEvent('tide-open-tweaks'));
     }));
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeApp(); });
-  }
-
-  /* ======================= NETWORK PULSE WIDGET ======================= */
-  function networkPulse() {
-    const box = $('#netBars'); if (!box || !D.networks) return;
-    box.innerHTML = D.networks.map(n => `
-      <div class="net-row">
-        <span class="net-name">${n.name}</span>
-        <span class="net-bars" data-s="${n.strength}">${[1,2,3,4,5].map(i => `<i class="${i <= n.strength ? 'on' : ''}" style="--c:${n.color}"></i>`).join('')}</span>
-        <span class="net-pct">${n.strength * 20}%</span>
-      </div>`).join('');
-    if (reduce) return;
-    setInterval(() => {
-      $$('.net-bars', box).forEach(r => {
-        const base = +r.dataset.s, jitter = Math.random() < .45 ? Math.max(2, base - 1) : base;
-        $$('i', r).forEach((b, i) => b.classList.toggle('on', i < jitter));
-      });
-    }, 1700);
-  }
-
-  /* ======================= CYBER WEATHER (threat gauge) ======================= */
-  function cyberWeather() {
-    const needle = $('#wxNeedle'), label = $('#wxLabel'), tip = $('#wxTip'); if (!needle) return;
-    const levels = [
-      { a: -68, name: 'LOW',      cls: 'low', tip: 'Calm seas — keep 2FA on and stay alert.' },
-      { a: -24, name: 'MODERATE', cls: 'mod', tip: 'Phishing about — verify links before tapping.' },
-      { a: 24,  name: 'ELEVATED', cls: 'hi',  tip: 'Scam SMS rising — never share OTPs or PINs.' },
-      { a: 64,  name: 'HIGH',     cls: 'max', tip: 'Active fraud wave — double-check every request.' }
-    ];
-    let i = 1;
-    function set() { const L = levels[i]; needle.style.transform = `rotate(${L.a}deg)`; label.textContent = L.name; label.className = 'wx-level ' + L.cls; tip.textContent = L.tip; }
-    set();
-    if (!reduce) setInterval(() => { i = (i + (Math.random() < .5 ? 1 : levels.length - 1)) % levels.length; set(); }, 5200);
-  }
-
-  /* ======================= LEADERBOARD WIDGET ======================= */
-  const SCORE_LABELS = {
-    'quiz:core':'Quiz · ZICTA & Safety','quiz:pass':'Quiz · Passwords','quiz:phish':'Quiz · Phishing',
-    'quiz:law':'Quiz · Cyber Law','quiz:tech':'Quiz · How Tech Works','quiz:privacy':'Quiz · Privacy',
-    'game:scam':'Spot the Scam','game:phish':'Phish or Legit','game:pass':'Strong or Weak','game:tf':'True or False',
-    'game:law':'Legal or Illegal','game:ttt':'Cyber Tac-Toe','game:memory':'Memory Match','game:defend':'Threat Defender',
-    'game:cipher':'Cipher Crack','game:binary':'Binary Blocks'
-  };
-  function leaderboard() {
-    const list = $('#boardList'); if (!list) return;
-    function render() {
-      const all = window.TideScore.all();
-      const rows = Object.keys(all).map(k => ({ n: SCORE_LABELS[k] || k, v: all[k] })).sort((a, b) => b.v - a.v).slice(0, 5);
-      if (!rows.length) { list.innerHTML = '<div class="board-empty">Play a quiz or game to climb the board! 🏆</div>'; return; }
-      const medal = ['🥇','🥈','🥉','4','5'];
-      list.innerHTML = rows.map((r, i) => `<div class="board-row"><span class="board-rank">${medal[i]}</span><span class="board-name">${r.n}</span><span class="board-score">${r.v}%</span></div>`).join('');
-    }
-    render();
-    window.addEventListener('tide-score', render);
   }
 
   /* ======================= QUICK ACTIONS WIDGET ======================= */
@@ -441,7 +412,7 @@
       { label: 'Talk to Zictabot', ico: 'chat',   run: () => openApp('zictabot') },
       { label: 'Report a scam',    ico: 'shield', run: () => openApp('knowledge') },
       { label: 'Photo Booth',      ico: 'spark',  run: () => openApp('camera') },
-      { label: 'Cyber Quiz',       ico: 'lock',   run: () => openApp('quiz') },
+      { label: 'General Quiz',     ico: 'spark',  run: () => openApp('quiz') },
       { label: 'Mini Games',       ico: 'globe',  run: () => openApp('arcade') },
     ];
     const scrim = document.createElement('div'); scrim.id = 'qaScrim';
@@ -505,7 +476,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     boot(); clock(); slider(); photos(); facts(); parallax(); ambient(); drag(); wireLaunchers();
     quickFab(); lightbox();
-    networkPulse(); cyberWeather(); leaderboard(); quickActions(); robot();
+    quickActions(); robot();
     // deep-link: ?app=zictabot opens an app once the desktop is ready
     const want = new URLSearchParams(location.search).get('app');
     if (want && builders[want]) setTimeout(() => openApp(want), reduce ? 200 : 2600);

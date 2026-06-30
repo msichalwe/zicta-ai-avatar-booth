@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex,nofollow" />
+<title>ZICTA Stand — Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#070d1a; --bg2:#0b1426; --panel:#0e1a31; --panel2:#11203c;
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+    --ink:#eaf2ff; --muted:#9fb2cf; --faint:#6b7f9e;
+    --teal:#2dd4bf; --indigo:#6c8bff; --violet:#a78bfa; --amber:#fbbf24;
+    --rose:#fb7185; --green:#34d399; --cyan:#38bdf8;
+    --shadow:0 18px 50px rgba(0,0,0,.45);
+    --r:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:Manrope,system-ui,sans-serif;color:var(--ink);
+    background:
+      radial-gradient(1200px 700px at 12% -10%, rgba(45,212,191,.14), transparent 60%),
+      radial-gradient(1100px 700px at 110% 0%, rgba(108,139,255,.16), transparent 55%),
+      linear-gradient(180deg,var(--bg),var(--bg2));
+    min-height:100%;-webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.num{font-family:Sora,sans-serif}
+  a{color:var(--teal)}
+  .wrap{max-width:1320px;margin:0 auto;padding:26px clamp(14px,3vw,34px) 60px}
+
+  /* ---------- top bar ---------- */
+  .top{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;
+    background:linear-gradient(140deg,var(--teal),var(--indigo));box-shadow:var(--shadow);font-weight:800;font-family:Sora;color:#04121f;font-size:19px}
+  .brand h1{font-size:20px;margin:0;letter-spacing:.2px}
+  .brand p{margin:2px 0 0;color:var(--muted);font-size:12.5px;font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+  .spacer{flex:1}
+  .clock{font-family:Sora;font-weight:700;font-size:18px;letter-spacing:.5px}
+  .clock small{display:block;color:var(--faint);font-size:11px;font-weight:600;text-align:right;font-family:Manrope}
+  .btn{appearance:none;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);
+    font-family:Manrope;font-weight:700;font-size:13.5px;padding:10px 15px;border-radius:12px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;transition:.18s}
+  .btn:hover{border-color:var(--teal);transform:translateY(-1px)}
+  .btn.ghost{background:transparent}
+  .btn.primary{background:linear-gradient(135deg,var(--teal),var(--indigo));border:none;color:#03101d}
+  .btn.danger:hover{border-color:var(--rose)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(52,211,153,.18)}
+  .dot.stale{background:var(--amber);box-shadow:0 0 0 4px rgba(251,191,36,.18)}
+
+  /* ---------- KPI cards ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+  .kpi{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+    border-radius:var(--r);padding:16px 17px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+  .kpi::after{content:"";position:absolute;inset:0;background:radial-gradient(120px 60px at 100% 0,var(--glow,rgba(45,212,191,.2)),transparent 70%);pointer-events:none}
+  .kpi .lab{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+  .kpi .val{font-family:Sora;font-weight:800;font-size:30px;margin-top:9px;line-height:1}
+  .kpi .sub{color:var(--faint);font-size:12px;margin-top:7px;font-weight:600}
+  .kpi .ico{width:18px;height:18px;opacity:.85}
+
+  /* ---------- panels / charts ---------- */
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:1.4fr 1fr}
+  @media(max-width:980px){.g3,.g2{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+    border-radius:var(--r);padding:18px;box-shadow:var(--shadow);min-width:0}
+  .card h3{margin:0 0 2px;font-size:15.5px}
+  .card .hint{color:var(--faint);font-size:12px;margin:0 0 12px;font-weight:600}
+  .chart-box{position:relative;height:260px}
+  .chart-box.tall{height:300px}
+  .section-t{font-family:Sora;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:1.4px;
+    color:var(--faint);margin:30px 2px 12px;display:flex;align-items:center;gap:12px}
+  .section-t::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* ---------- receipts table ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{ text-align:left;color:var(--muted);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;
+    padding:0 12px 11px;border-bottom:1px solid var(--line)}
+  td{padding:13px 12px;border-bottom:1px solid var(--line)}
+  tr:last-child td{border-bottom:none}
+  td.amt,th.amt{text-align:right;font-family:Sora;font-weight:700;white-space:nowrap}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;
+    background:rgba(108,139,255,.16);color:#bcccff;border:1px solid rgba(108,139,255,.3)}
+  .vend{font-weight:700}
+  .vend small{display:block;color:var(--faint);font-weight:500;font-size:11.5px;margin-top:2px}
+  tfoot td{font-family:Sora;font-weight:800;border-top:2px solid var(--line2);font-size:15px}
+
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:12px}
+  .legend span{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);font-weight:600}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  .note{color:var(--faint);font-size:12px;line-height:1.6;font-weight:500}
+  .warn{background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.3);color:#ffc3cc;
+    padding:10px 13px;border-radius:12px;font-size:12.5px;font-weight:600;margin-top:10px}
+
+  /* ---------- login ---------- */
+  .gate{position:fixed;inset:0;display:grid;place-items:center;padding:20px;
+    background:radial-gradient(900px 600px at 50% -10%,rgba(45,212,191,.16),transparent 60%),linear-gradient(180deg,var(--bg),var(--bg2));z-index:50}
+  .login{width:min(400px,94vw);background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line2);border-radius:24px;padding:34px 30px;box-shadow:var(--shadow)}
+  .login .logo{width:56px;height:56px;font-size:23px;margin:0 auto 16px}
+  .login h2{text-align:center;margin:0 0 4px;font-size:21px}
+  .login p{text-align:center;color:var(--muted);margin:0 0 24px;font-size:13.5px;font-weight:600}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px}
+  .field input{width:100%;background:#0a1426;border:1px solid var(--line2);color:var(--ink);
+    font-family:Manrope;font-size:15px;padding:13px 14px;border-radius:12px;outline:none;transition:.16s}
+  .field input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(45,212,191,.16)}
+  .login .btn.primary{width:100%;justify-content:center;padding:13px;font-size:15px;margin-top:6px}
+  .err{background:rgba(251,113,133,.12);border:1px solid rgba(251,113,133,.34);color:#ffc3cc;
+    padding:11px 13px;border-radius:12px;font-size:13px;font-weight:600;margin-bottom:14px;text-align:center;display:none}
+
+  /* ---------- modal ---------- */
+  .modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(3,8,18,.74);z-index:60;padding:20px}
+  .modal.on{display:grid}
+  .modal .box{width:min(420px,94vw);background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line2);border-radius:20px;padding:26px;box-shadow:var(--shadow)}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted);font-size:13.5px;line-height:1.6;margin:0 0 20px}
+  .modal .row{display:flex;gap:10px;justify-content:flex-end}
+
+  .skel{opacity:.0;transition:opacity .4s}
+  .skel.show{opacity:1}
+  .hidden{display:none!important}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:#0c1830;border:1px solid var(--line2);color:var(--ink);padding:12px 18px;border-radius:13px;
+    font-weight:700;font-size:13.5px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:70}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN GATE ===================== -->
+<div class="gate" id="gate">
+  <form class="login" id="loginForm" autocomplete="on">
+    <div class="logo">Z</div>
+    <h2>Stand Operations</h2>
+    <p>ZICTA trade-fair booth &middot; sign in to continue</p>
+    <div class="err" id="loginErr"></div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" placeholder="admin@zicta.zm" autocomplete="username" required />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
+    </div>
+    <button class="btn primary" type="submit" id="loginBtn">Sign in</button>
+  </form>
+</div>
+
+<!-- ===================== DASHBOARD ===================== -->
+<div class="wrap skel" id="dash">
+  <div class="top">
+    <div class="brand">
+      <div class="logo">Z</div>
+      <div>
+        <h1>ZICTA Stand — Operations</h1>
+        <p>Live booth analytics &amp; spend</p>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="clock"><span id="clk">--:--:--</span><small id="upd">refreshing…</small></div>
+    <button class="btn ghost" id="refreshBtn"><span class="dot" id="liveDot"></span> Refresh</button>
+    <button class="btn ghost danger" id="resetBtn">Reset counters</button>
+    <button class="btn ghost" id="logoutBtn">Sign out</button>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpis" id="kpis"></div>
+
+  <!-- USAGE -->
+  <div class="section-t">Booth usage</div>
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card">
+      <h3>Plays per experience</h3>
+      <p class="hint">How many times each app was opened at the stand</p>
+      <div class="chart-box tall"><canvas id="cPlays"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Share of activity</h3>
+      <p class="hint">Where visitors spend their taps</p>
+      <div class="chart-box tall"><canvas id="cShare"></canvas></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <h3>Activity over time</h3>
+    <p class="hint" id="trendHint">Interactions per day</p>
+    <div class="chart-box"><canvas id="cTrend"></canvas></div>
+  </div>
+
+  <!-- CREDITS -->
+  <div class="section-t">LiveAvatar credits</div>
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card">
+      <h3>Credit balance</h3>
+      <p class="hint" id="creditHint">Live balance from LiveAvatar</p>
+      <div class="chart-box" style="height:240px"><canvas id="cCredits"></canvas></div>
+      <div id="creditWarn"></div>
+    </div>
+    <div class="card">
+      <h3>Interactions remaining</h3>
+      <p class="hint">Estimated visitor sessions left on current balance</p>
+      <div id="interLeft"></div>
+    </div>
+  </div>
+
+  <!-- SPEND -->
+  <div class="section-t">Spend &amp; past receipts</div>
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="card">
+      <h3>Receipts</h3>
+      <p class="hint">Money spent running the stand</p>
+      <table id="receipts">
+        <thead><tr><th>Date</th><th>Vendor</th><th>Category</th><th class="amt">Amount</th></tr></thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Spend by category</h3>
+      <p class="hint">Where the budget went</p>
+      <div class="chart-box" style="height:240px"><canvas id="cSpend"></canvas></div>
+      <div class="legend" id="spendLegend"></div>
+    </div>
+  </div>
+
+  <p class="note" id="footNote"></p>
+</div>
+
+<!-- reset confirm modal -->
+<div class="modal" id="modal">
+  <div class="box">
+    <h3>Reset all counters?</h3>
+    <p>This permanently clears every recorded play/session for the stand. Credits and receipts are not affected. Good to do once, right before the fair opens.</p>
+    <div class="row">
+      <button class="btn ghost" id="mCancel">Cancel</button>
+      <button class="btn primary danger" id="mConfirm">Yes, reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  var $ = function(s){ return document.querySelector(s); };
+
+  /* ----- app labels, colours, icons ----- */
+  var LABELS = {
+    zictabot:'Zictabot (Avatar)', ai:'AI Chat', camera:'Photo Booth',
+    quiz:'Game Show', knowledge:'Knowledge Cards', arcade:'Mini Games', map:'Address Map'
+  };
+  var COLORS = {
+    zictabot:'#2dd4bf', ai:'#6c8bff', camera:'#fbbf24', quiz:'#a78bfa',
+    knowledge:'#38bdf8', arcade:'#fb7185', map:'#34d399'
+  };
+  var PALETTE = ['#2dd4bf','#6c8bff','#fbbf24','#a78bfa','#38bdf8','#fb7185','#34d399','#f472b6'];
+  var SVG = {
+    play:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2"><path d="M8 5v14l11-7z" fill="#2dd4bf" stroke="none"/></svg>',
+    users:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#6c8bff" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6.2a3 3 0 0 1 0 5.6M20.5 19a5 5 0 0 0-3.5-4.8"/></svg>',
+    star:'<svg class="ico" viewBox="0 0 24 24" fill="#fbbf24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>',
+    coin:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M9.6 9.3c.6-.9 4.4-1.4 4.4.9 0 2-4 1.3-4 3.2 0 2.2 3.8 1.8 4.4.8" stroke-linecap="round"/></svg>',
+    chat:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linejoin="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16H9l-4 4v-4H6"/></svg>',
+    cash:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.4"/></svg>'
+  };
+
+  var fmt = function(n){ return (n==null||isNaN(n)) ? '—' : Number(n).toLocaleString('en-US'); };
+  var money = function(n,c){ return (c||'$')==='USD'?'$':'$'; }; // currency symbol resolver below
+  var sym = function(c){ return c==='USD'||!c ? '$' : (c+' '); };
+  var usd = function(n,c){ return sym(c)+ (Number(n)||0).toLocaleString('en-US'); };
+
+  var charts = {};
+  function mkChart(id, cfg){
+    if (!window.Chart) return null;
+    var el = document.getElementById(id); if(!el) return null;
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(el.getContext('2d'), cfg);
+    return charts[id];
+  }
+  Chart && (Chart.defaults.color = '#9fb2cf', Chart.defaults.font.family = 'Manrope, sans-serif',
+            Chart.defaults.borderColor = 'rgba(255,255,255,.06)');
+
+  // center-text plugin for doughnut gauges
+  var centerText = {
+    id:'centerText',
+    afterDraw:function(chart){
+      var t = chart.config.options.plugins.centerText; if(!t) return;
+      var ctx = chart.ctx, x = chart.getDatasetMeta(0).data[0].x, y = chart.getDatasetMeta(0).data[0].y;
+      ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle = '#eaf2ff'; ctx.font = '800 30px Sora, sans-serif';
+      ctx.fillText(t.big, x, y-8);
+      ctx.fillStyle = '#9fb2cf'; ctx.font = '600 12px Manrope, sans-serif';
+      ctx.fillText(t.small, x, y+18);
+      ctx.restore();
+    }
+  };
+  if (window.Chart) Chart.register(centerText);
+
+  /* ===================== AUTH ===================== */
+  function showGate(){ $('#gate').style.display='grid'; $('#dash').classList.remove('show'); }
+  function hideGate(){ $('#gate').style.display='none'; $('#dash').classList.add('show'); }
+
+  $('#loginForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = $('#loginBtn'); btn.disabled = true; btn.textContent='Signing in…';
+    $('#loginErr').style.display='none';
+    fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({email:$('#email').value, password:$('#password').value})})
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+    .then(function(res){
+      if(!res.ok){ throw new Error(res.d.error||'Login failed'); }
+      hideGate(); load();
+    })
+    .catch(function(err){ var e=$('#loginErr'); e.textContent=err.message; e.style.display='block'; })
+    .finally(function(){ btn.disabled=false; btn.textContent='Sign in'; });
+  });
+
+  $('#logoutBtn').addEventListener('click', function(){
+    fetch('/api/admin/logout',{method:'POST'}).finally(function(){ location.reload(); });
+  });
+
+  /* ===================== DATA LOAD ===================== */
+  var firstLoad = true;
+  function load(){
+    return fetch('/api/admin/stats',{headers:{'cache-control':'no-cache'}})
+      .then(function(r){
+        if(r.status===401){ showGate(); throw new Error('unauth'); }
+        return r.json();
+      })
+      .then(function(d){ hideGate(); render(d); firstLoad=false; setDot(false); })
+      .catch(function(e){ if(e.message!=='unauth'){ setDot(true); } });
+  }
+  function setDot(stale){
+    var dot=$('#liveDot'); if(dot) dot.className = 'dot' + (stale?' stale':'');
+    $('#upd').textContent = stale ? 'connection lost — retrying' : ('updated ' + new Date().toLocaleTimeString());
+  }
+
+  $('#refreshBtn').addEventListener('click', load);
+
+  /* ===================== RENDER ===================== */
+  function render(d){
+    renderKPIs(d);
+    renderPlays(d);
+    renderShare(d);
+    renderTrend(d);
+    renderCredits(d);
+    renderInteractions(d);
+    renderReceipts(d);
+    renderSpend(d);
+    renderFoot(d);
+  }
+
+  function appList(d){
+    return (d.apps||[]).slice().sort(function(a,b){ return (d.plays[b]||0)-(d.plays[a]||0); });
+  }
+
+  function renderKPIs(d){
+    var apps = appList(d);
+    var busy = apps[0];
+    var cr = d.credits || {};
+    var il = d.interactionsLeft;
+    var cards = [
+      {lab:'Total interactions', ico:SVG.play, val:fmt(d.totalOpens), sub:'app opens recorded', glow:'rgba(45,212,191,.22)'},
+      {lab:'Sessions today', ico:SVG.users, val:fmt(d.sessions.today), sub:fmt(d.sessions.total)+' all-time', glow:'rgba(108,139,255,.22)'},
+      {lab:'Busiest experience', ico:SVG.star, val:(d.totalOpens? (LABELS[busy]||busy):'—'), sub:(d.totalOpens? fmt(d.plays[busy])+' plays':'no plays yet'), glow:'rgba(251,191,36,.22)', small:true},
+      {lab:'Credits left', ico:SVG.coin, val:(cr.left!=null? fmt(Math.round(cr.left)) : '—'), sub:(il? il.minutes+' min of avatar time':'unavailable'), glow:'rgba(52,211,153,.22)'},
+      {lab:'≈ 2-min sessions left', ico:SVG.chat, val:(il? fmt(il.at2min):'—'), sub:(il? fmt(il.at90s)+' at the 90s cap':''), glow:'rgba(167,139,250,.22)'},
+      {lab:'Total spend', ico:SVG.cash, val:usd(d.spend.total,d.spend.currency), sub:(d.receipts.length)+' receipts', glow:'rgba(251,113,133,.22)'}
+    ];
+    $('#kpis').innerHTML = cards.map(function(c){
+      return '<div class="kpi" style="--glow:'+c.glow+'">'+
+        '<div class="lab">'+c.ico+c.lab+'</div>'+
+        '<div class="val" style="'+(c.small?'font-size:20px;margin-top:13px':'')+'">'+c.val+'</div>'+
+        '<div class="sub">'+(c.sub||'')+'</div></div>';
+    }).join('');
+  }
+
+  function renderPlays(d){
+    var apps = appList(d);
+    mkChart('cPlays', {
+      type:'bar',
+      data:{ labels: apps.map(function(a){return LABELS[a]||a;}),
+        datasets:[{ data: apps.map(function(a){return d.plays[a]||0;}),
+          backgroundColor: apps.map(function(a){return COLORS[a]||'#6c8bff';}),
+          borderRadius:8, maxBarThickness:46 }]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.parsed.y+' plays';}}}},
+        scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, ticks:{precision:0}, grid:{color:'rgba(255,255,255,.05)'}} } }
+    });
+  }
+
+  function renderShare(d){
+    var apps = appList(d).filter(function(a){return (d.plays[a]||0)>0;});
+    if(!apps.length) apps = appList(d);
+    mkChart('cShare', {
+      type:'doughnut',
+      data:{ labels: apps.map(function(a){return LABELS[a]||a;}),
+        datasets:[{ data: apps.map(function(a){return d.plays[a]||0;}),
+          backgroundColor: apps.map(function(a){return COLORS[a]||'#6c8bff';}),
+          borderColor:'#0e1a31', borderWidth:3 }]},
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+        plugins:{ legend:{position:'bottom', labels:{boxWidth:11,boxHeight:11,usePointStyle:true,padding:14,font:{size:12}}},
+          centerText:{ big:fmt(d.totalOpens), small:'total' } } }
+    });
+  }
+
+  function renderTrend(d){
+    var byDay = d.byDay||[];
+    var useHour = byDay.length<=1;
+    var labels, vals, hint;
+    if(useHour){
+      labels = (d.byHour||[]).map(function(h){ return (h.hour%12||12)+(h.hour<12?'a':'p'); });
+      vals = (d.byHour||[]).map(function(h){return h.opens;});
+      hint = "Interactions by hour (today)";
+    } else {
+      labels = byDay.map(function(x){ var p=x.day.split('-'); return p[2]+'/'+p[1]; });
+      vals = byDay.map(function(x){return x.opens;});
+      hint = "Interactions per day (last "+byDay.length+")";
+    }
+    $('#trendHint').textContent = hint;
+    mkChart('cTrend', {
+      type:'line',
+      data:{ labels:labels, datasets:[{ data:vals, borderColor:'#2dd4bf', borderWidth:2.5, tension:.35,
+        fill:true, pointRadius:useHour?0:3, pointBackgroundColor:'#2dd4bf',
+        backgroundColor:function(ctx){ var g=ctx.chart.ctx.createLinearGradient(0,0,0,240);
+          g.addColorStop(0,'rgba(45,212,191,.34)'); g.addColorStop(1,'rgba(45,212,191,0)'); return g; } }]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){return ' '+c.parsed.y+' interactions';}}}},
+        scales:{ x:{grid:{display:false}}, y:{beginAtZero:true,ticks:{precision:0},grid:{color:'rgba(255,255,255,.05)'}} } }
+    });
+  }
+
+  function renderCredits(d){
+    var cr = d.credits||{};
+    $('#creditWarn').innerHTML = '';
+    if(cr.error){
+      $('#creditHint').textContent = 'Balance unavailable';
+      $('#creditWarn').innerHTML = '<div class="warn">Couldn’t reach LiveAvatar: '+cr.error+'</div>';
+    } else {
+      $('#creditHint').textContent = (cr.sandbox? 'Sandbox mode (free) — ' : 'Live mode — ') + cr.perMinute + ' credits/min';
+    }
+    var left = cr.left, used = cr.used;
+    if(left==null){
+      mkChart('cCredits',{ type:'doughnut', data:{labels:['no data'],datasets:[{data:[1],backgroundColor:['#1b2942'],borderWidth:0}]},
+        options:{cutout:'72%',plugins:{legend:{display:false},centerText:{big:'—',small:'credits'}}}});
+      return;
+    }
+    var data, labels, colors, center;
+    if(used!=null && cr.start){
+      data=[used,left]; labels=['Used','Remaining']; colors=['#1f2d49','#2dd4bf'];
+      center={big:fmt(Math.round(left)), small:'of '+fmt(cr.start)+' left'};
+    } else {
+      data=[left]; labels=['Remaining']; colors=['#2dd4bf'];
+      center={big:fmt(Math.round(left)), small:'credits left'};
+    }
+    mkChart('cCredits',{
+      type:'doughnut',
+      data:{ labels:labels, datasets:[{ data:data, backgroundColor:colors, borderColor:'#0e1a31', borderWidth:3 }]},
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'72%',
+        plugins:{ legend:{position:'bottom', labels:{boxWidth:11,boxHeight:11,usePointStyle:true,padding:14}},
+          centerText:center,
+          tooltip:{callbacks:{label:function(c){return ' '+fmt(Math.round(c.parsed))+' credits';}}} } }
+    });
+  }
+
+  function renderInteractions(d){
+    var il = d.interactionsLeft, cr=d.credits||{};
+    if(!il){ $('#interLeft').innerHTML = '<div class="warn">Credit balance unavailable — estimate can’t be shown.</div>'; return; }
+    var caps = d.sessionCaps||{maxSeconds:90};
+    var rows = [
+      {t:'2-minute chats', n:il.at2min, note:'4 credits each', c:'#2dd4bf'},
+      {t:'90-second chats', n:il.at90s, note:'your configured cap', c:'#6c8bff'},
+      {t:'Total avatar minutes', n:il.minutes, note:'at '+cr.perMinute+' credits/min', c:'#a78bfa'}
+    ];
+    var maxN = Math.max.apply(null, rows.map(function(r){return r.n;})) || 1;
+    $('#interLeft').innerHTML = rows.map(function(r){
+      var w = Math.max(4, Math.round(r.n/maxN*100));
+      return '<div style="margin:18px 0 0">'+
+        '<div style="display:flex;justify-content:space-between;align-items:baseline">'+
+          '<span style="font-weight:700;font-size:14px">'+r.t+'</span>'+
+          '<span style="font-family:Sora;font-weight:800;font-size:22px;color:'+r.c+'">'+fmt(r.n)+'</span>'+
+        '</div>'+
+        '<div style="height:9px;border-radius:6px;background:#13213c;margin-top:8px;overflow:hidden">'+
+          '<div style="height:100%;width:'+w+'%;border-radius:6px;background:'+r.c+'"></div></div>'+
+        '<div style="color:#6b7f9e;font-size:12px;margin-top:5px;font-weight:600">'+r.note+'</div></div>';
+    }).join('') +
+    '<div class="note" style="margin-top:20px">Real interactions land between the 90-second and 2-minute figures, depending on how often visitors extend a chat. Sandbox sessions are free and don’t draw down credits.</div>';
+  }
+
+  function renderReceipts(d){
+    var rows = (d.receipts||[]).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    var tb = $('#receipts tbody'), tf = $('#receipts tfoot');
+    if(!rows.length){ tb.innerHTML = '<tr><td colspan="4" class="note">No receipts recorded. Add them under "adminReceipts" in config.json.</td></tr>'; tf.innerHTML=''; return; }
+    tb.innerHTML = rows.map(function(r){
+      return '<tr><td style="white-space:nowrap;color:#9fb2cf;font-weight:600">'+(r.date||'—')+'</td>'+
+        '<td class="vend">'+(r.vendor||'—')+(r.note?'<small>'+r.note+'</small>':'')+'</td>'+
+        '<td><span class="pill">'+(r.category||'Other')+'</span></td>'+
+        '<td class="amt">'+usd(r.amount, r.currency||d.spend.currency)+'</td></tr>';
+    }).join('');
+    tf.innerHTML = '<tr><td colspan="3">Total spent</td><td class="amt">'+usd(d.spend.total, d.spend.currency)+'</td></tr>';
+  }
+
+  function renderSpend(d){
+    var cats = Object.keys(d.spend.byCategory||{});
+    var vals = cats.map(function(k){return d.spend.byCategory[k];});
+    var cols = cats.map(function(_,i){return PALETTE[i%PALETTE.length];});
+    mkChart('cSpend',{
+      type:'doughnut',
+      data:{ labels:cats, datasets:[{ data:vals, backgroundColor:cols, borderColor:'#0e1a31', borderWidth:3 }]},
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'64%',
+        plugins:{ legend:{display:false}, centerText:{big:usd(d.spend.total,d.spend.currency), small:'total'},
+          tooltip:{callbacks:{label:function(c){ return ' '+usd(c.parsed,d.spend.currency); }}} } }
+    });
+    $('#spendLegend').innerHTML = cats.map(function(k,i){
+      return '<span><i style="background:'+cols[i]+'"></i>'+k+' · '+usd(d.spend.byCategory[k],d.spend.currency)+'</span>';
+    }).join('');
+  }
+
+  function renderFoot(d){
+    var cr=d.credits||{};
+    var bits = [];
+    bits.push('Usage is counted per app-open across the booth (anonymous, per browser session).');
+    if(cr.start) bits.push('The credit gauge assumes '+fmt(cr.start)+' credits purchased to date — edit "liveavatarCreditsStart" in config.json to match your real total.');
+    bits.push('Live credit balance is read directly from LiveAvatar and cached for 60s.');
+    $('#footNote').innerHTML = bits.join(' ');
+  }
+
+  /* ===================== RESET MODAL ===================== */
+  function toast(msg){ var t=$('#toast'); t.textContent=msg; t.classList.add('on'); setTimeout(function(){t.classList.remove('on');},2200); }
+  $('#resetBtn').addEventListener('click', function(){ $('#modal').classList.add('on'); });
+  $('#mCancel').addEventListener('click', function(){ $('#modal').classList.remove('on'); });
+  $('#mConfirm').addEventListener('click', function(){
+    $('#modal').classList.remove('on');
+    fetch('/api/admin/reset',{method:'POST'}).then(function(r){
+      if(r.status===401){ showGate(); return; }
+      toast('Counters reset'); load();
+    });
+  });
+
+  /* ===================== CLOCK + POLL ===================== */
+  function tick(){ $('#clk').textContent = new Date().toLocaleTimeString(); }
+  tick(); setInterval(tick, 1000);
+  setInterval(function(){ if($('#gate').style.display==='none') load(); }, 20000);
+
+  if(!window.Chart){
+    // Chart.js (CDN) missing — degrade gracefully but still show numbers.
+    console.warn('Chart.js failed to load (offline?). Tables & KPIs still work.');
+  }
+
+  // boot
+  load();
+})();
+</script>
+</body>
+</html>

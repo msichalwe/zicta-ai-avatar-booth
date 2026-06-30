@@ -78,6 +78,15 @@ window.buildQuiz = function (app, ctx) {
       .gs-confetti{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
       .gs-confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;animation:gsfall linear forwards}
       @keyframes gsfall{to{transform:translateY(110vh) rotate(720deg)}}
+      /* age-group chooser */
+      .gs-ages{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(12px,2vw,24px);margin:6px auto 0;max-width:740px}
+      .gs-age{cursor:pointer;border:2px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);border-radius:22px;
+        padding:clamp(18px,2.6vw,32px) 14px;color:#fff;font-family:'Manrope',sans-serif;transition:transform .15s,background .2s,border-color .2s}
+      .gs-age:hover{transform:translateY(-6px);background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.45)}
+      .gs-age:active{transform:translateY(-2px) scale(.98)}
+      .gs-age .em{font-size:clamp(34px,5vw,58px);display:block;margin-bottom:8px}
+      .gs-age .nm{font-family:'Sora',sans-serif;font-weight:800;font-size:clamp(18px,2.1vw,26px)}
+      .gs-age .rg{font-size:clamp(12px,1.4vw,15px);color:rgba(255,255,255,.7);margin-top:3px}
     `;
     document.head.appendChild(st);
   }
@@ -88,32 +97,72 @@ window.buildQuiz = function (app, ctx) {
     { id: 'cap',    name: 'a ZICTA Cap',     emoji: '🧢' },
     { id: 'cash',   name: 'K100 Cash',       emoji: '💵' }
   ];
-  const ICTQ = [
-    { q: "ZICTA's toll-free help line is…", opts: ['100', '7070', '991', '112'], a: 1 },
-    { q: 'Which company created the ChatGPT AI assistant?', opts: ['Google', 'Meta', 'OpenAI', 'Apple'], a: 2 },
-    { q: 'Dialling *#06# on a phone shows its…', opts: ['Battery level', 'IMEI number', 'SIM PIN', 'Data balance'], a: 1 },
-    { q: 'Which is the safest password?', opts: ['qwerty123', 'YourName2024', 'coral-tide-lantern-92', 'P@ss!'], a: 2 },
-    { q: 'In Zambia, SIM cards must be…', opts: ['Registered with a valid ID', 'Bought abroad', 'Shared with family', 'Renewed weekly'], a: 0 },
-    { q: '“Phishing” messages try to steal your…', opts: ['Airtime', 'Personal info & passwords', 'Phone case', 'Ringtone'], a: 1 },
-    { q: '“5G” is the 5th generation of…', opts: ['Batteries', 'Mobile networks', 'Cameras', 'Passwords'], a: 1 },
-    { q: 'Which company develops the Android operating system?', opts: ['Apple', 'Microsoft', 'Google', 'Samsung'], a: 2 },
-    { q: 'Zambia’s country internet domain is…', opts: ['.za', '.zm', '.zb', '.zw'], a: 1 },
-    { q: 'On public Wi-Fi you should avoid…', opts: ['Reading news', 'Banking & sensitive logins', 'Checking weather', 'Music'], a: 1 }
+
+  /* Age groups — picked after the prize box so questions suit the player */
+  const AGES = [
+    { id: 'kids',   nm: 'Kids',   rg: 'Ages 6–12',  em: '🧒' },
+    { id: 'teens',  nm: 'Teens',  rg: 'Ages 13–19', em: '🧑' },
+    { id: 'adults', nm: 'Adults', rg: '20 & up',    em: '🧑‍💼' }
   ];
-  const GENQ = [
-    { q: 'Which country won the 2022 FIFA World Cup?', opts: ['France', 'Brazil', 'Argentina', 'Germany'], a: 2 },
-    { q: 'Who won the 2023 men’s Ballon d’Or?', opts: ['Erling Haaland', 'Lionel Messi', 'Kylian Mbappé', 'Vinícius Jr'], a: 1 },
-    { q: 'Which nation won AFCON 2023 (played early 2024)?', opts: ['Nigeria', 'Egypt', 'Côte d’Ivoire', 'Senegal'], a: 2 },
-    { q: 'Which city hosted the 2024 Summer Olympics?', opts: ['Tokyo', 'Paris', 'Los Angeles', 'London'], a: 1 },
-    { q: 'What is the capital city of Zambia?', opts: ['Ndola', 'Kitwe', 'Livingstone', 'Lusaka'], a: 3 },
-    { q: 'Victoria Falls lies on which river?', opts: ['Nile', 'Zambezi', 'Congo', 'Limpopo'], a: 1 },
-    { q: 'Zambia’s national football team is nicknamed the…', opts: ['Chipolopolo', 'Bafana Bafana', 'Super Eagles', 'Black Stars'], a: 0 },
-    { q: 'The album “Midnights” (2022) is by which artist?', opts: ['Beyoncé', 'Taylor Swift', 'Adele', 'Rihanna'], a: 1 },
-    { q: 'Which company owns Instagram and WhatsApp?', opts: ['Google', 'Meta', 'Twitter/X', 'TikTok'], a: 1 },
-    { q: 'Zambia’s official currency is the…', opts: ['Shilling', 'Rand', 'Kwacha', 'Naira'], a: 2 },
-    { q: 'How many continents are there on Earth?', opts: ['5', '6', '7', '8'], a: 2 },
-    { q: 'The largest planet in our solar system is…', opts: ['Saturn', 'Earth', 'Jupiter', 'Mars'], a: 2 }
-  ];
+  const CAT_LABEL = { CONSUMER: 'Consumer', NETWORK: 'Network & Telecoms', ICT: 'ICT & Digital', GENERAL: 'General Knowledge' };
+
+  /* Question banks per age group — ZICTA-aligned: consumer, network & ICT
+     (plus a couple of fun general-knowledge ones). 5 are picked per play. */
+  const BANKS = {
+    kids: [
+      { cat: 'ICT', q: 'What do you put inside a phone so it can make calls?', opts: ['A battery only', 'A SIM card', 'A sticker', 'A photo'], a: 1 },
+      { cat: 'CONSUMER', q: 'If something online makes you upset or scared, you should…', opts: ['Keep it a secret', 'Tell a trusted adult', 'Send money', 'Reply angrily'], a: 1 },
+      { cat: 'NETWORK', q: 'What does Wi-Fi let your device do?', opts: ['Charge faster', 'Connect to the internet', 'Take photos', 'Get heavier'], a: 1 },
+      { cat: 'CONSUMER', q: "ZICTA's free help number you can call is…", opts: ['7070', '911', '1000', '123'], a: 0 },
+      { cat: 'NETWORK', q: 'Which one is a mobile phone network in Zambia?', opts: ['Airtel', 'Toyota', 'Shoprite', 'Trampoline'], a: 0 },
+      { cat: 'ICT', q: "What does 'ICT' help people do?", opts: ['Cook food', 'Communicate & use computers and phones', 'Grow plants', 'Drive cars'], a: 1 },
+      { cat: 'ICT', q: 'A good rule when using a phone or tablet is to…', opts: ['Share your password with strangers', 'Ask a grown-up before downloading apps', 'Tap every pop-up', 'Tell strangers your home'], a: 1 },
+      { cat: 'GENERAL', q: 'What is the capital city of Zambia?', opts: ['Ndola', 'Kitwe', 'Livingstone', 'Lusaka'], a: 3 },
+      { cat: 'GENERAL', q: "Zambia's national football team is nicknamed the…", opts: ['Chipolopolo', 'Super Eagles', 'Bafana Bafana', 'Black Stars'], a: 0 },
+      { cat: 'GENERAL', q: 'The famous waterfall on the Zambezi is called…', opts: ['Niagara Falls', 'Victoria Falls', 'Angel Falls', 'Kalambo Falls'], a: 1 },
+      /* ---- ZICTA Kids Quiz (ages 16 & below) ---- */
+      { cat: 'ICT', q: 'What does ZICTA stand for?', opts: ['Zambia Information and Communications Technology Authority', 'Zambia Internet and Cable Television Agency', 'Zambia Information Centre and Technology Agency', 'Zambia International Communications and Trade Authority'], a: 0 },
+      { cat: 'ICT', q: "What is one of ZICTA's main responsibilities?", opts: ['Building roads', 'Regulating ICT and postal services', 'Printing school books', 'Running hospitals'], a: 1 },
+      { cat: 'NETWORK', q: 'Which of the following devices is commonly regulated under ICT services?', opts: ['Refrigerator', 'Mobile phone', 'Microwave oven', 'Washing machine'], a: 1 },
+      { cat: 'CONSUMER', q: 'What should you do if you receive a suspicious text message asking for your password or PIN?', opts: ['Reply immediately', 'Share it with friends', 'Ignore it and report it to ZICTA using *707# or the Police', 'Click every link to see what happens'], a: 2 },
+      { cat: 'CONSUMER', q: 'Why is it important to keep your passwords secret?', opts: ['To make them easy to remember', 'To protect your personal information and accounts', 'So everyone can use your account', 'It is not important'], a: 1 },
+      { cat: 'CONSUMER', q: 'Which of these is a safe online habit?', opts: ['Sharing your PIN with strangers', 'Clicking unknown links', 'Using strong passwords and keeping them private', 'Posting your home address online'], a: 2 },
+      { cat: 'ICT', q: 'What should you do before downloading an app?', opts: ['Download every app you see', 'Ask a trusted adult or make sure it comes from a trusted source', 'Share your password first', 'Ignore all warnings'], a: 1 },
+      { cat: 'ICT', q: 'Which service helps people send letters and parcels?', opts: ['Postal services', 'Electricity services', 'Water supply', 'Road transport only'], a: 0 },
+      { cat: 'CONSUMER', q: "What is the emergency number you should call if you're being harassed or bullied online?", opts: ['123', '911', '116', '9999'], a: 2 },
+      { cat: 'CONSUMER', q: 'Why should you register your SIM card using correct information?', opts: ['To make your phone heavier', 'To help improve security and comply with the law', 'To get free airtime forever', 'It does not matter'], a: 1 },
+      { cat: 'CONSUMER', q: 'If you see cyberbullying online, what is the best thing to do?', opts: ['Join in', 'Share it with more people', 'Report it to a trusted adult, teacher, parent, or the platform', 'Ignore it and encourage others to watch'], a: 2 },
+      { cat: 'CONSUMER', q: 'What is a scam?', opts: ['A fun online game', 'An attempt to trick people into giving away money or personal information', 'A type of mobile phone', 'A school subject'], a: 1 },
+      { cat: 'NETWORK', q: 'Why is quality internet and phone service important?', opts: ['It helps people communicate, learn, and do business effectively', 'It makes phones bigger', 'It changes the weather', 'It only helps gamers'], a: 0 },
+      { cat: 'CONSUMER', q: 'Before sharing a photo of a friend online, you should:', opts: ['Post it immediately', 'Ask for their permission first', 'Edit it without telling them', 'Send it to strangers'], a: 1 },
+      { cat: 'CONSUMER', q: 'If your phone or internet service is not working properly, what is the best first step?', opts: ['Throw away the device', 'Contact your service provider or report the issue through the proper channels', 'Stop using technology forever', 'Share your passwords online'], a: 1 },
+      { cat: 'CONSUMER', q: 'What is the best way to stay safe online?', opts: ['Trust everyone you meet online', 'Keep personal information private, use strong passwords, and think before clicking links', 'Share your passwords with friends', 'Click on every pop-up advertisement'], a: 1 }
+    ],
+    teens: [
+      { cat: 'CONSUMER', q: 'In Zambia, every SIM card must be…', opts: ['Registered with a valid ID', 'Shared with friends', 'Bought abroad', 'Renewed weekly'], a: 0 },
+      { cat: 'NETWORK', q: '“5G” is the 5th generation of…', opts: ['Batteries', 'Mobile networks', 'Cameras', 'Games'], a: 1 },
+      { cat: 'ICT', q: "Zambia's country internet domain is…", opts: ['.za', '.zm', '.zb', '.zw'], a: 1 },
+      { cat: 'CONSUMER', q: "If your network overcharges you and won't fix it, you can complain to…", opts: ['No one', 'ZICTA', 'The bank', 'The school'], a: 1 },
+      { cat: 'ICT', q: "What does the 'I' in ICT stand for?", opts: ['Internet', 'Information', 'Instagram', 'Income'], a: 1 },
+      { cat: 'NETWORK', q: "To see your phone's IMEI number you dial…", opts: ['*#06#', '*123#', '112', '#100#'], a: 0 },
+      { cat: 'CONSUMER', q: 'A message says you won a prize but must pay a fee first. You should…', opts: ['Pay quickly', "Ignore it — real prizes don't need a fee", 'Send your PIN', 'Share it widely'], a: 1 },
+      { cat: 'ICT', q: 'Besides telecoms & ICT, ZICTA also regulates…', opts: ['Postal & courier services', 'Airlines', 'Farming', 'Mining'], a: 0 },
+      { cat: 'GENERAL', q: 'Which company owns WhatsApp and Instagram?', opts: ['Google', 'Meta', 'TikTok', 'Apple'], a: 1 },
+      { cat: 'GENERAL', q: 'Which city hosted the 2024 Summer Olympics?', opts: ['Tokyo', 'Paris', 'Los Angeles', 'London'], a: 1 }
+    ],
+    adults: [
+      { cat: 'CONSUMER', q: "If your operator can't resolve your complaint, who do you escalate to?", opts: ['No one', 'ZICTA, the sector regulator', 'Your bank', 'The council'], a: 1 },
+      { cat: 'ICT', q: 'ZICTA was established in Zambia under the…', opts: ['ICT Act of 2009', 'Roads Act', 'Banking Act', 'Mines Act'], a: 0 },
+      { cat: 'CONSUMER', q: 'Before buying a phone, ZICTA advises you to…', opts: ['Buy the cheapest from anyone', 'Buy a type-approved device from a registered dealer', 'Avoid receipts', 'Pay only by mobile money'], a: 1 },
+      { cat: 'NETWORK', q: 'If your phone is lost or stolen, a key step is to…', opts: ['Do nothing', 'Report to your operator and the police, with your IMEI', 'Just buy data', 'Change your wallpaper'], a: 1 },
+      { cat: 'CONSUMER', q: 'ZICTA or your provider will NEVER ask you for your…', opts: ['Name', 'Mobile-money PIN', 'Address', 'Date of birth'], a: 1 },
+      { cat: 'ICT', q: 'ZICTA “type-approves” equipment to ensure devices are…', opts: ['The cheapest available', 'Safe & compliant for use in Zambia', 'Made locally', 'Pre-loaded with games'], a: 1 },
+      { cat: 'NETWORK', q: 'Mobile networks operating in Zambia include Airtel, MTN and…', opts: ['Zamtel', 'Zesco', 'Zanaco', 'Zampost'], a: 0 },
+      { cat: 'CONSUMER', q: "ZICTA's toll-free consumer line is…", opts: ['7070', '991', '100', '112'], a: 0 },
+      { cat: 'ICT', q: 'Zambia’s national digital addressing system gives every location a…', opts: ['Digital address / postcode', 'New phone number', 'Bank account', 'Voter number'], a: 0 },
+      { cat: 'GENERAL', q: "Zambia's official currency is the…", opts: ['Shilling', 'Rand', 'Kwacha', 'Naira'], a: 2 }
+    ]
+  };
   const WIN = 4, ROUND = 5;
 
   app.innerHTML = `
@@ -133,7 +182,7 @@ window.buildQuiz = function (app, ctx) {
     for (let i = 0; i < 40; i++) { const t = document.createElement('span'); t.className = 'twinkle'; const s = 1 + Math.random() * 3; t.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-delay:${(-Math.random()*3).toFixed(1)}s`; bg.appendChild(t); }
   }
 
-  let boxes = [], chosen = null, qs = [], qi = 0, stars = 0, locked = false;
+  let boxes = [], chosen = null, ageGroup = null, qs = [], qi = 0, stars = 0, locked = false;
   intro();
 
   function intro() {
@@ -141,7 +190,7 @@ window.buildQuiz = function (app, ctx) {
       <div class="gs-panel anim-q">
         <div class="gs-kicker">★ ZICTA Game Show ★</div>
         <h1 class="gs-title">Win a Prize!</h1>
-        <p class="gs-sub">Pick a mystery box, then answer 5 questions — 3 on ICT &amp; cyber-safety, 2 general knowledge. Get ${WIN} or more right and the box is yours!</p>
+        <p class="gs-sub">Pick a mystery box, choose your age group, then answer 5 questions about ZICTA, networks &amp; everyday tech. Get ${WIN} or more right and the box is yours!</p>
         <button class="gs-btn" id="gsPlay">Let’s play ▸</button>
       </div>`;
     stage.querySelector('#gsPlay').onclick = pickScreen;
@@ -168,13 +217,34 @@ window.buildQuiz = function (app, ctx) {
       if (chosen !== null) return;
       chosen = boxes[+e.dataset.i];
       els.forEach(o => o.classList.add(o === e ? 'chosen' : 'dim'));
-      setTimeout(beginQuiz, 650);
+      setTimeout(ageScreen, 650);
+    });
+  }
+
+  function ageScreen() {
+    stage.innerHTML = `
+      <div class="gs-panel anim-q">
+        <div class="gs-kicker">Step 2</div>
+        <h1 class="gs-title" style="font-size:clamp(28px,4.4vw,52px)">Who's playing?</h1>
+        <p class="gs-sub">Choose an age group and we'll pick questions that suit you.</p>
+        <div class="gs-ages" id="gsAges">
+          ${AGES.map(a => `
+            <button class="gs-age" data-id="${a.id}">
+              <span class="em">${a.em}</span>
+              <div class="nm">${a.nm}</div>
+              <div class="rg">${a.rg}</div>
+            </button>`).join('')}
+        </div>
+      </div>`;
+    stage.querySelectorAll('.gs-age').forEach(b => b.onclick = () => {
+      ageGroup = b.dataset.id;
+      beginQuiz();
     });
   }
 
   function beginQuiz() {
-    qs = shuffle(pick(ICTQ, 3).map(q => ({ ...q, cat: 'ICT' })).concat(pick(GENQ, 2).map(q => ({ ...q, cat: 'GEN' }))));
-    qs = qs.map(withShuffledOpts);
+    const bank = BANKS[ageGroup] || BANKS.adults;
+    qs = pick(bank, ROUND).map(withShuffledOpts);
     qi = 0; stars = 0; locked = false;
     question();
   }
@@ -187,7 +257,7 @@ window.buildQuiz = function (app, ctx) {
           <div class="gs-stars" id="gsStars">${Array.from({ length: ROUND }, (_, i) => `<span class="st ${i < stars ? 'on' : ''}">⭐</span>`).join('')}</div>
           <div class="gs-prog">Q${qi + 1}/${ROUND}</div>
         </div>
-        <div class="gs-cat ${m.cat === 'GEN' ? 'gen' : ''}">${m.cat === 'GEN' ? 'General Knowledge' : 'ICT · Cyber'}</div>
+        <div class="gs-cat ${m.cat === 'GENERAL' ? 'gen' : ''}">${CAT_LABEL[m.cat] || m.cat}</div>
         <div class="gs-question">${m.q}</div>
         <div class="gs-opts" id="gsOpts">
           ${m.opts.map((o, i) => `<button class="gs-opt" data-i="${i}">${o}</button>`).join('')}

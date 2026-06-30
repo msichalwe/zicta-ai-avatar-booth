@@ -58,5 +58,15 @@
     "style": 0.12,
     "use_speaker_boost": true,
     "model": "eleven_multilingual_v2"
-  }
+  },
+  "_admin_note": "Stand operations dashboard at /admin. Sign in with adminEmail + adminPassword (CHANGE THESE before the fair). liveavatarCreditsStart is the assumed total credits purchased to date (used only to draw the consumed-vs-remaining gauge — set it to your real purchased total; live remaining is read from LiveAvatar). adminReceipts seeds the Past receipts table & spend charts.",
+  "adminEmail": "admin@zicta.zm",
+  "adminPassword": "change-me",
+  "liveavatarCreditsPerMinute": 2,
+  "liveavatarCreditsStart": 2000,
+  "adminReceipts": [
+    { "date": "2026-05-12", "vendor": "LiveAvatar (HeyGen)", "category": "Avatar credits", "amount": 1900, "currency": "USD", "note": "Photoreal avatar streaming credits" },
+    { "date": "2026-05-20", "vendor": "Anthropic (Claude)", "category": "AI brain", "amount": 250, "currency": "USD", "note": "Claude API usage for the booth brain" },
+    { "date": "2026-05-20", "vendor": "ElevenLabs", "category": "Voice", "amount": 150, "currency": "USD", "note": "Custom voice / TTS" }
+  ]
 }
