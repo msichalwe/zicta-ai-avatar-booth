@@ -151,6 +151,10 @@ window.buildZictabot = function (app, ctx) {
   let SDK = null, cfg = {}, session = null, ptt = false, ending = false, closing = false, goodbyeLive = false;
   let keepAlive = null, idleWatch = null, timerInt = null, closeSafety = null, farewellTimer = null, farewellPending = false;
   let secondsLeft = 0, lastActivity = Date.now(), muted = false, holding = false, disposed = false, landingSlider = null;
+  // Barge-in guard (hands-free mode): the mic is closed while the avatar speaks so
+  // her own voice / room noise can't interrupt the AI mid-sentence.
+  let botSpeaking = false, micOpen = true, unmuteTimer = null;
+  const REOPEN_DELAY = 450; // ms after she stops before the mic reopens (lets her audio tail finish)
   const MAXS_DEFAULT = 90, EXTEND = 20, IDLE_STOP_MS = 60000;
   const FAREWELL = /\b(goodbye|good bye|bye+|see you|see ya|that'?s all|that'?s it|i'?m done|we'?re done|nothing else|thank you so much|have a (good|nice|great) (day|one)|take care)\b/i;
   const bump = () => { lastActivity = Date.now(); };
@@ -165,6 +169,19 @@ window.buildZictabot = function (app, ctx) {
     muted:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" fill="#fff"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M4 4l16 16" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>'
   };
   function setMic(s){ mic.className='zb-mic'+(s&&s!=='idle'?' '+s:''); mic.innerHTML = MICSVG[s] || MICSVG.idle; }
+  // Open/close the actual published mic track (no-op if already in that state).
+  async function setMicOpen(open){
+    if(!session || ptt || open===micOpen) return;
+    try { open ? await session.voiceChat.unmute() : await session.voiceChat.mute(); micOpen = open; }
+    catch(e){ console.warn('mic toggle failed', e); }
+  }
+  // Desired state: mic open only when the avatar is NOT speaking and the user hasn't muted.
+  function syncMic(){
+    clearTimeout(unmuteTimer);
+    if(!session || ptt) return;
+    if(muted || botSpeaking){ setMicOpen(false); return; }        // close immediately
+    unmuteTimer = setTimeout(()=>{ if(!muted && !botSpeaking) setMicOpen(true); }, REOPEN_DELAY); // reopen after a beat
+  }
 
   // ----- intro landing: slider + bubbles + info + Talk Now (opens the live bot) -----
   let landingEl = null;
@@ -245,6 +262,7 @@ window.buildZictabot = function (app, ctx) {
 
   // Hard stop: release the mic, end the live session, drop the reference. Safe to call repeatedly.
   function stopSession(){
+    clearTimeout(unmuteTimer); botSpeaking=false;
     try { session && session.voiceChat && session.voiceChat.stop && session.voiceChat.stop(); } catch {}
     try { session && session.stop(); } catch {}
     session = null;
@@ -254,12 +272,14 @@ window.buildZictabot = function (app, ctx) {
     const { SessionEvent, SessionState, AgentEventsEnum } = SDK;
     session.on(SessionEvent.SESSION_STREAM_READY, onReady);
     session.on(SessionEvent.SESSION_STATE_CHANGED, (st)=>{ if(st===SessionState.DISCONNECTED) onEnded(); });
-    session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, ()=>{ bump(); if(closing) goodbyeLive=true; if(!ptt) setMic('speaking'); });
-    session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, ()=>{ bump(); if(!ptt) setMic('idle');
+    session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, ()=>{ bump(); if(closing) goodbyeLive=true;
+      botSpeaking=true; if(!ptt){ setMic('speaking'); syncMic(); } });   // close mic while she talks (no barge-in)
+    session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, ()=>{ bump(); botSpeaking=false;
+      if(!ptt){ setMic(muted?'muted':'idle'); syncMic(); }              // reopen the mic once she's done
       if(closing && goodbyeLive){ clearTimeout(closeSafety); return finish(); }
       if(farewellPending){ farewellPending=false; clearTimeout(farewellTimer); setTimeout(finish, 900); } });
-    session.on(AgentEventsEnum.USER_SPEAK_STARTED, ()=>{ bump(); if(!ptt) setMic('listening'); });
-    session.on(AgentEventsEnum.USER_SPEAK_ENDED, ()=>{ bump(); if(!ptt) setMic('idle'); });
+    session.on(AgentEventsEnum.USER_SPEAK_STARTED, ()=>{ bump(); if(!ptt && micOpen && !muted) setMic('listening'); });
+    session.on(AgentEventsEnum.USER_SPEAK_ENDED, ()=>{ bump(); if(!ptt && !botSpeaking) setMic(muted?'muted':'idle'); });
     session.on(AgentEventsEnum.USER_TRANSCRIPTION, (e)=>{ userCap.textContent = e.text ? '“'+e.text+'”' : '';
       if(e.text) addMsg('user', e.text);
       if(FAREWELL.test(e.text||'')){ farewellPending=true; clearTimeout(farewellTimer); farewellTimer=setTimeout(()=>{ if(farewellPending){farewellPending=false; finish();} }, 9000); } });
@@ -272,7 +292,7 @@ window.buildZictabot = function (app, ctx) {
     try { session.attach(video); } catch(e){ console.warn(e); }
     video.play().catch(()=>{});
     let micMsg = ptt ? 'Press & hold the mic to talk' : 'Just speak — she’s listening · tap mic to mute';
-    try { await session.voiceChat.start(); } catch(e){ micMsg='Allow the microphone to talk'; }
+    try { await session.voiceChat.start(); micOpen=true; } catch(e){ micOpen=false; micMsg='Allow the microphone to talk'; }
     hideOver(); mic.classList.remove('zb-hidden'); hint.classList.remove('zb-hidden');
     setMic('idle'); hint.textContent = micMsg; bump(); startTimer();
     if (cfg.liveavatarSandbox === false){
@@ -301,10 +321,11 @@ window.buildZictabot = function (app, ctx) {
   }
 
   /* ---- mic ---- */
-  mic.onclick = async ()=>{ if(!session) return;
-    if(ptt) return;  // push-to-talk handled by pointer events below
-    try { if(muted){ await session.voiceChat.unmute(); muted=false; setMic('idle'); hint.textContent='Mic on — just speak'; }
-          else { await session.voiceChat.mute(); muted=true; setMic('muted'); hint.textContent='Muted · tap mic to talk'; } } catch(e){ console.warn(e); }
+  mic.onclick = ()=>{ if(!session || ptt) return;  // push-to-talk handled by pointer events below
+    muted = !muted;
+    if(muted){ setMic('muted'); hint.textContent='Muted · tap mic to talk'; }
+    else { setMic(botSpeaking?'speaking':'idle'); hint.textContent='Mic on — just speak'; }
+    syncMic();  // applies mute/unmute, but stays closed while she's still speaking
   };
   mic.addEventListener('pointerdown', async (e)=>{ if(!ptt||!session||holding) return; e.preventDefault(); holding=true; bump(); setMic('listening'); try{ await session.voiceChat.startPushToTalk(); }catch{} });
   const pttUp = async ()=>{ if(!ptt||!session||!holding) return; holding=false; setMic('idle'); try{ await session.voiceChat.stopPushToTalk(); }catch{} };
