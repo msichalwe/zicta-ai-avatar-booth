@@ -93,9 +93,11 @@ window.buildQuiz = function (app, ctx) {
 
   /* ---------------- data ---------------- */
   const PRIZES = [
-    { id: 'tshirt', name: 'a ZICTA T-Shirt', emoji: '👕' },
-    { id: 'cap',    name: 'a ZICTA Cap',     emoji: '🧢' },
-    { id: 'cash',   name: 'K100 Cash',       emoji: '💵' }
+    { id: 'tshirt',  name: 'a ZICTA T-Shirt',      emoji: '👕' },
+    { id: 'cap',     name: 'a ZICTA Cap',          emoji: '🧢' },
+    { id: 'pen',     name: 'a ZICTA Pen',          emoji: '🖊️' },
+    { id: 'data',    name: 'a 1GB Data Bundle',    emoji: '📶', net: true },
+    { id: 'minutes', name: '30 Talk-Time Minutes', emoji: '📞', net: true }
   ];
 
   /* Age groups — picked after the prize box so questions suit the player */
@@ -203,7 +205,7 @@ window.buildQuiz = function (app, ctx) {
       <div class="gs-panel anim-q">
         <div class="gs-kicker">Step 1</div>
         <h1 class="gs-title" style="font-size:clamp(28px,4.4vw,52px)">Pick your box</h1>
-        <p class="gs-sub">Each box hides a prize — a T-shirt, a cap or K100. Pick one… then earn it!</p>
+        <p class="gs-sub">Each box hides a prize — a ZICTA T-shirt or cap, a pen, a data bundle or talk-time minutes. Pick one… then earn it!</p>
         <div class="gs-boxes" id="gsBoxes">
           ${boxes.map((_, i) => `
             <button class="gs-box" data-i="${i}">
@@ -300,7 +302,7 @@ window.buildQuiz = function (app, ctx) {
         </div>
         <h1 class="gs-win-h">${won ? 'You won ' + chosen.name + '!' : stars + ' / ' + ROUND + ' correct'}</h1>
         <p class="gs-sub">${won
-          ? 'Show this screen at the ZICTA stand to claim your prize. Nicely played!'
+          ? 'Show this screen at the ZICTA stand to claim your prize.' + (chosen.net ? ' Redeemable on Airtel, MTN, Zamtel or ZedMobile.' : ' Nicely played!')
           : 'You needed ' + WIN + ' stars to crack the box. Give it another go!'}</p>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
           <button class="gs-btn" id="gsAgain">Play again ▸</button>
